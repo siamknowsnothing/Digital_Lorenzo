@@ -2399,9 +2399,18 @@ function syncMobAdminBtn(){
   bar.innerHTML=`<span style="max-width:520px;">This site uses local storage and analytics cookies to remember your preferences and understand how visitors use the site.</span>
     <button id="cookie-ok" style="border:1px solid var(--border2);color:var(--gold);background:none;padding:8px 18px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;cursor:none;">Got it</button>`;
   document.body.appendChild(bar);
+  // Push the back-to-top button above the cookie bar so the bar never covers it
+  const btt=document.getElementById('back-to-top');
+  function repositionBtt(){
+    if(btt) btt.style.bottom = (bar.offsetHeight + 34) + 'px';
+  }
+  repositionBtt();
+  window.addEventListener('resize', repositionBtt);
   document.getElementById('cookie-ok').addEventListener('click',()=>{
     localStorage.setItem('cookieNoticeDismissed','1');
     bar.remove();
+    window.removeEventListener('resize', repositionBtt);
+    if(btt) btt.style.bottom = '24px';
   });
 })();
 </script>
