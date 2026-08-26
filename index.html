@@ -50,7 +50,13 @@
 }
 </script>
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<!-- Fonts loaded non-render-blocking: preconnect + preload trick, so a slow
+     fonts.googleapis.com response never delays the whole page's first paint.
+     Falls back to a plain stylesheet if JS is disabled. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"></noscript>
 <style>
 :root {
   --bg: #080808;
@@ -330,8 +336,7 @@ body.admin .about-photo-upload-btn{display:block;}
 .skip-link:focus{left:16px;top:16px;}
 
 /* back-to-top */
-#back-to-top{position:fixed;right:24px;bottom:24px;width:44px;height:44px;border:1px solid var(--border2);background:rgba(8,8,8,.85);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:none;z-index:9996;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .3s,transform .3s,border-color .2s;}
-#back-to-top.show{opacity:1;pointer-events:auto;transform:none;}
+#back-to-top{position:fixed;right:24px;bottom:24px;width:44px;height:44px;border:1px solid var(--border2);background:rgba(8,8,8,.85);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:none;z-index:9996;opacity:1;pointer-events:auto;transition:border-color .2s;}
 #back-to-top:hover{border-color:var(--gold);}
 
 /* keyboard focus: visible gold ring, since the custom cursor removes normal mouse affordance cues */
@@ -2382,13 +2387,8 @@ function syncMobAdminBtn(){
 })();
 
 /* ── BACK TO TOP ── */
-(function(){
-  const btn=document.getElementById('back-to-top');
-  if(!btn) return;
-  window.addEventListener('scroll',()=>{
-    btn.classList.toggle('show', window.scrollY>600);
-  },{passive:true});
-})();
+/* Always visible — no scroll-based show/hide, so there's no dependency on
+   scroll events or thresholds that could make it feel delayed. */
 
 /* ── COOKIE / PRIVACY NOTICE ── */
 (function(){
