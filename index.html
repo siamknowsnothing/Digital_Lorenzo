@@ -50,13 +50,7 @@
 }
 </script>
 
-<!-- Fonts loaded non-render-blocking: preconnect + preload trick, so a slow
-     fonts.googleapis.com response never delays the whole page's first paint.
-     Falls back to a plain stylesheet if JS is disabled. -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #080808;
@@ -77,20 +71,19 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;font-w
 
 
 /* ── CURSOR ── */
-#cur{width:10px;height:10px;background:var(--gold);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform .08s;}
-#cur-ring{width:34px;height:34px;border:1px solid rgba(200,169,110,.45);border-radius:50%;position:fixed;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .16s ease;}
+#cur{width:10px;height:10px;background:var(--gold);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate3d(-50%,-50%,0);will-change:transform;}
+#cur-ring{width:34px;height:34px;border:1px solid rgba(200,169,110,.45);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transform:translate3d(-50%,-50%,0);will-change:transform;}
 a,button,[onclick]{cursor:none;}
 
 /* ── HEADER ── */
 header{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 52px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent;}
-header::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 100%);pointer-events:none;z-index:-1;}
 header.scrolled{background:rgba(8,8,8,.97);border-bottom-color:var(--border);}
 .logo{font-family:'Playfair Display',serif;font-size:1.45rem;letter-spacing:.06em;color:var(--text);text-decoration:none;cursor:none;}
 .logo em{color:var(--gold);font-style:normal;}
 nav{display:flex;gap:8px;align-items:center;}
-.nav-a{background:none;border:none;color:#d8d4cc;font-family:'Lato',sans-serif;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;padding:8px 14px;cursor:none;transition:color .2s;text-shadow:0 1px 4px rgba(0,0,0,.7);text-decoration:none;display:inline-block;}
+.nav-a{background:none;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;padding:8px 14px;cursor:none;transition:color .2s;}
 .nav-a:hover,.nav-a.active{color:var(--gold);}
-#admin-btn{border:1px solid rgba(255,255,255,.25);color:#d8d4cc;padding:8px 18px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:none;transition:all .2s;text-shadow:0 1px 4px rgba(0,0,0,.7);}
+#admin-btn{border:1px solid var(--border2);color:var(--muted);padding:8px 18px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:none;transition:all .2s;}
 #admin-btn:hover{border-color:var(--gold);color:var(--gold);}
 #admin-btn.on{border-color:var(--gold);color:var(--gold);background:rgba(200,169,110,.07);}
 
@@ -201,45 +194,8 @@ body.admin .photographer-photo-edit{display:flex;}
 .photographer-contact a{color:var(--gold);text-decoration:none;cursor:none;}
 .photographer-contact a:hover{text-decoration:underline;}
 
-/* ── MODELS: LISTING PAGE ── */
-#models-page,#model-profile-page{display:none;padding-top:110px;}
-body.route-models #models-page{display:block;}
-body.route-model-profile #model-profile-page{display:block;}
-body.route-models .home-section,body.route-model-profile .home-section{display:none;}
-.models-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);}
-.model-card{background:var(--surface);position:relative;aspect-ratio:3/4;overflow:hidden;text-decoration:none;display:block;cursor:none;}
-.model-card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s;filter:grayscale(15%);}
-.model-card:hover img{transform:scale(1.06);}
-.model-card-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.4rem;color:var(--muted2);background:linear-gradient(135deg,var(--surface2),#222);}
-.model-card-info{position:absolute;left:0;right:0;bottom:0;padding:20px 18px;background:linear-gradient(to top,rgba(0,0,0,.85),transparent);}
-.model-card-name{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--text);}
-.model-card-years{font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-top:4px;}
-.model-card-actions{display:none;position:absolute;top:10px;right:10px;gap:6px;}
-body.admin .model-card-actions{display:flex;}
-.model-card-actions button{background:rgba(8,8,8,.85);border:1px solid var(--border2);color:var(--text);width:28px;height:28px;font-size:.7rem;cursor:none;display:flex;align-items:center;justify-content:center;}
-.model-card-actions button:hover{border-color:var(--gold);color:var(--gold);}
-.model-card-actions button.del:hover{border-color:var(--danger);color:var(--danger);}
-
-/* ── MODELS: PROFILE PAGE ── */
-.model-profile-hero{display:grid;grid-template-columns:340px 1fr;gap:56px;padding:0 0 64px;align-items:start;}
-.model-profile-cover{width:100%;aspect-ratio:3/4;object-fit:cover;background:var(--surface2);}
-.model-profile-cover-placeholder{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--muted2);background:linear-gradient(135deg,var(--surface2),#222);}
-.model-profile-name{font-family:'Playfair Display',serif;font-size:2.4rem;line-height:1.15;margin-bottom:6px;}
-.model-profile-years{font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:24px;}
-.model-profile-bio{font-family:'Cormorant Garamond',serif;font-size:1.08rem;line-height:1.85;color:rgba(236,232,225,.75);white-space:pre-wrap;margin-bottom:32px;}
-.model-profile-stats{display:flex;gap:36px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--border);margin-bottom:26px;}
-.model-profile-stats .stat .num{font-size:1.5rem;}
-.model-profile-links{display:flex;gap:18px;flex-wrap:wrap;}
-.model-profile-links a{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;border-bottom:1px solid var(--border2);padding-bottom:2px;transition:color .2s,border-color .2s;cursor:none;}
-.model-profile-links a:hover{color:var(--gold);border-bottom-color:var(--gold);}
-.model-profile-actions{margin-top:28px;display:none;gap:10px;}
-body.admin .model-profile-actions{display:flex;}
-.model-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;padding:0 0 80px;}
-.model-gallery img{width:100%;aspect-ratio:3/4;object-fit:cover;cursor:none;transition:opacity .2s;}
-.model-gallery img:hover{opacity:.82;}
-#model-not-found{display:none;text-align:center;padding:140px 24px 100px;}
-body.route-model-notfound #model-not-found{display:block;}
-body.route-model-notfound .home-section,body.route-model-notfound #models-page,body.route-model-notfound #model-profile-page{display:none;}
+/* ── MODELS (shares Photographer card styling) ── */
+#models{background:var(--bg);}
 
 /* ── SERVICES ── */
 #services{background:var(--surface);}
@@ -330,12 +286,11 @@ select option{background:var(--surface);}
 #pg-photo-up-area input{display:none;}
 #pg-photo-up-area p{color:var(--muted);font-size:.8rem;}
 
-/* model cover photo upload in modal */
+/* model photo upload in modal (mirrors photographer) */
 #md-photo-up-area{border:2px dashed var(--border2);padding:20px;text-align:center;cursor:none;transition:border-color .2s;margin-bottom:4px;}
 #md-photo-up-area:hover,#md-photo-up-area.drag{border-color:var(--gold);}
 #md-photo-up-area input{display:none;}
 #md-photo-up-area p{color:var(--muted);font-size:.8rem;}
-#md-gallery-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:16px;}
 
 /* toast */
 .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--gold);color:var(--text);padding:12px 28px;font-size:.78rem;letter-spacing:.07em;z-index:9999;opacity:0;pointer-events:none;transition:all .28s;white-space:nowrap;}
@@ -384,7 +339,8 @@ body.admin .about-photo-upload-btn{display:block;}
 .skip-link:focus{left:16px;top:16px;}
 
 /* back-to-top */
-#back-to-top{position:fixed;right:24px;bottom:24px;width:44px;height:44px;border:1px solid var(--border2);background:rgba(8,8,8,.85);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:none;z-index:9996;opacity:1;pointer-events:auto;transition:border-color .2s;}
+#back-to-top{position:fixed;right:24px;bottom:24px;width:44px;height:44px;border:1px solid var(--border2);background:rgba(8,8,8,.85);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:none;z-index:9996;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .3s,transform .3s,border-color .2s;}
+#back-to-top.show{opacity:1;pointer-events:auto;transform:none;}
 #back-to-top:hover{border-color:var(--gold);}
 
 /* keyboard focus: visible gold ring, since the custom cursor removes normal mouse affordance cues */
@@ -405,7 +361,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 /* ── MOBILE NAV DRAWER ── */
 #mobile-nav-drawer{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(8,8,8,.98);z-index:250;flex-direction:column;align-items:center;justify-content:center;gap:8px;backdrop-filter:blur(8px);}
 #mobile-nav-drawer.open{display:flex;}
-.mob-nav-a{background:none;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:1rem;letter-spacing:.22em;text-transform:uppercase;padding:16px 32px;cursor:pointer;transition:color .2s;width:100%;text-align:center;text-decoration:none;display:block;box-sizing:border-box;}
+.mob-nav-a{background:none;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:1rem;letter-spacing:.22em;text-transform:uppercase;padding:16px 32px;cursor:pointer;transition:color .2s;width:100%;text-align:center;}
 .mob-nav-a:hover,.mob-nav-a:active{color:var(--gold);}
 .mob-nav-divider{width:40px;height:1px;background:var(--border2);margin:8px auto;}
 #mob-admin-btn{border:1px solid var(--border2);color:var(--muted);padding:12px 28px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:pointer;transition:all .2s;margin-top:12px;}
@@ -426,8 +382,6 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   #admin-bar{padding:10px 28px;gap:8px;}
   .about-grid{gap:48px;}
   .photographers-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));}
-  .model-profile-hero{grid-template-columns:260px 1fr;gap:36px;padding:0 0 48px;}
-  .model-gallery{padding:0 0 60px;}
 }
 
 /* ── MOBILE (max 640px) ── */
@@ -468,15 +422,6 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   /* photographers */
   .photographers-grid{grid-template-columns:1fr;}
   .photographer-card{padding:28px 22px;}
-
-  /* models */
-  #models-page,#model-profile-page{padding-top:88px;}
-  .model-profile-hero{grid-template-columns:1fr;gap:24px;padding:0 0 40px;}
-  .model-profile-cover,.model-profile-cover-placeholder{aspect-ratio:4/3;}
-  .model-profile-name{font-size:1.9rem;}
-  .models-grid{grid-template-columns:repeat(2,1fr);}
-  .model-gallery{padding:0 0 48px;grid-template-columns:repeat(2,1fr);}
-  #model-not-found{padding:110px 18px 70px;}
 
   /* services */
   .services-grid{grid-template-columns:1fr 1fr;}
@@ -536,12 +481,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 <header id="hdr">
   <a class="logo" href="#hero" onclick="return false;" id="logo-el">Studio Lorenzo</a>
   <nav id="main-nav">
-    <button class="nav-a" onclick="scrollToSection('#gallery')">Gallery</button>
-    <button class="nav-a" onclick="scrollToSection('#about')">About</button>
-    <button class="nav-a" onclick="scrollToSection('#photographers')">Photographers</button>
-    <a class="nav-a" href="/models">Models</a>
-    <button class="nav-a" onclick="scrollToSection('#contact')">Contact</button>
-    <button id="admin-btn" onclick="handleAdminClick()">Admin</button>
+    <!-- built by JS -->
   </nav>
   <button id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -553,15 +493,15 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   <button class="mob-nav-a" onclick="mobileNavGo('#gallery')">Gallery</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#about')">About</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#photographers')">Photographers</button>
+  <button class="mob-nav-a" onclick="mobileNavGo('#models')">Models</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#services')">Services</button>
-  <a class="mob-nav-a" href="/models">Models</a>
   <button class="mob-nav-a" onclick="mobileNavGo('#contact')">Contact</button>
   <div class="mob-nav-divider"></div>
   <button id="mob-admin-btn" onclick="mobileAdminClick()">Admin</button>
 </div>
 
 <!-- ── HERO ── -->
-<section id="hero" class="home-section">
+<section id="hero">
   <div class="hero-bg"></div>
   <div class="hero-lines"></div>
   <div class="hero-content">
@@ -580,7 +520,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 </section>
 
 <!-- ── GALLERY ── -->
-<section id="gallery" class="home-section">
+<section id="gallery">
   <div class="sec-label">Portfolio</div>
   <h2 class="sec-title">Selected <i>Work</i></h2>
   <div class="cat-tabs" id="cat-tabs"></div>
@@ -588,14 +528,14 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 </section>
 
 <!-- ── SERVICES ── -->
-<section id="services" class="reveal home-section">
+<section id="services" class="reveal">
   <div class="sec-label">Specialities</div>
   <h2 class="sec-title">What I <i>Shoot</i></h2>
   <div class="services-grid" id="services-grid"></div>
 </section>
 
 <!-- ── ABOUT ── -->
-<section id="about" class="reveal home-section">
+<section id="about" class="reveal">
   <div class="about-grid">
     <div class="about-img-wrap" id="about-img-wrap">
       <div class="about-img-placeholder"><span>📷</span><p>Profile Photo</p></div>
@@ -617,7 +557,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 </section>
 
 <!-- ── PHOTOGRAPHERS ── -->
-<section id="photographers" class="reveal home-section">
+<section id="photographers" class="reveal">
   <div class="sec-label">Team</div>
   <h2 class="sec-title">Our <i>Photographers</i></h2>
   <div class="photographers-grid" id="photographers-grid">
@@ -628,23 +568,15 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   </div>
 </section>
 
-<!-- ── CONTACT ── -->
-<section id="contact" class="reveal home-section">
-  <div class="sec-label">Get in Touch</div>
-  <h2 class="sec-title">Let's Create <i>Together</i></h2>
-  <p class="contact-sub" id="contact-sub">Available for commissions, collaborations, and exhibitions.</p>
-  <a class="contact-email" id="contact-email" href="#">hello@photographer.com</a>
-  <p class="contact-address" id="contact-address">House-18/6, 1st Floor<br>Mohammadia Housing Main Road<br>Mohammadpur, Dhaka-1207</p>
-  <div class="contact-links" id="contact-links"></div>
-</section>
-
-<!-- ── MODELS: LISTING PAGE (route: /models) ── -->
-<section id="models-page">
+<!-- ── MODELS ── -->
+<section id="models" class="reveal">
   <div class="sec-label">Talent</div>
   <h2 class="sec-title">Our <i>Models</i></h2>
-  <div class="models-grid" id="models-grid"></div>
-  <div id="models-empty" class="empty" style="display:none;">
-    <big>👤</big>
+  <div class="photographers-grid" id="models-grid">
+    <!-- rendered by JS -->
+  </div>
+  <div class="empty" id="models-empty" style="display:none;">
+    <big>🎭</big>
     <p>No models added yet.</p>
   </div>
   <div style="display:none;margin-top:24px;" id="add-model-wrap">
@@ -652,33 +584,15 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   </div>
 </section>
 
-<!-- ── MODELS: PROFILE PAGE (route: /<slug>) ── -->
-<section id="model-profile-page">
-  <div class="model-profile-hero">
-    <div id="model-profile-cover-wrap"></div>
-    <div>
-      <div class="sec-label">Model</div>
-      <h1 class="model-profile-name" id="mp-name"></h1>
-      <div class="model-profile-years" id="mp-years"></div>
-      <p class="model-profile-bio" id="mp-bio"></p>
-      <div class="model-profile-stats" id="mp-stats"></div>
-      <div class="model-profile-links" id="mp-links"></div>
-      <div class="model-profile-actions">
-        <button class="ab-btn hl" onclick="openEditModel(currentModelId)">✏ Edit Profile</button>
-        <button class="ab-btn" onclick="deleteModel(currentModelId)">✕ Remove</button>
-      </div>
-    </div>
-  </div>
-  <div class="model-gallery" id="mp-gallery"></div>
+<!-- ── CONTACT ── -->
+<section id="contact" class="reveal">
+  <div class="sec-label">Get in Touch</div>
+  <h2 class="sec-title">Let's Create <i>Together</i></h2>
+  <p class="contact-sub" id="contact-sub">Available for commissions, collaborations, and exhibitions.</p>
+  <a class="contact-email" id="contact-email" href="#">hello@photographer.com</a>
+  <p class="contact-address" id="contact-address">House-18/6, 1st Floor<br>Mohammadia Housing Main Road<br>Mohammadpur, Dhaka-1207</p>
+  <div class="contact-links" id="contact-links"></div>
 </section>
-
-<!-- ── MODEL NOT FOUND ── -->
-<div id="model-not-found">
-  <div class="sec-label">404</div>
-  <h2 class="sec-title">Model Not <i>Found</i></h2>
-  <p class="contact-sub" style="margin:0 auto;">This profile doesn't exist or may have been removed.</p>
-  <a class="hero-cta" href="/models" style="display:inline-flex;margin-top:28px;">Browse Models</a>
-</div>
 
 <footer>
   <span id="footer-copy">© 2025 Photographer</span>
@@ -700,7 +614,6 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   <button class="ab-btn hl" onclick="openM('m-photo')">+ Add Photos</button>
   <button class="ab-btn" onclick="openM('m-cats')">Manage Categories</button>
   <button class="ab-btn" onclick="openM('m-services')">Manage Services</button>
-  <button class="ab-btn" onclick="location.href='/models'">Manage Models</button>
   <button class="ab-btn" onclick="openM('m-bio')">Edit Profile</button>
   <button class="ab-btn" onclick="openM('m-settings')">Site Settings</button>
   <button class="ab-btn" onclick="openPassModal()">Change Password</button>
@@ -897,53 +810,54 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   </div>
 </div>
 
-<!-- ── ADD/EDIT MODEL MODAL ── -->
+<!-- ── MODEL MODAL ── -->
 <div class="overlay" id="m-model">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-model')">✕</button>
     <h2 id="md-modal-title">Add Model</h2>
-    <p class="sub">This creates a public profile page at lorenzodigital.com/<i id="md-slug-preview">slug</i></p>
+    <p class="sub">Add a new model to the Models section.</p>
     <input type="hidden" id="md-edit-id">
-    <label>Cover Photo</label>
+    <label>Profile Photo</label>
     <div id="md-photo-up-area" onclick="document.getElementById('md-photo-file').click()"
       ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')"
       ondrop="event.preventDefault();this.classList.remove('drag');mdPhotoPick({target:{files:event.dataTransfer.files}})">
       <input type="file" id="md-photo-file" accept="image/*" onchange="mdPhotoPick(this)">
       <p>Click or drag & drop photo</p>
-      <img id="md-photo-prev" style="max-height:160px;max-width:100%;margin-top:10px;display:none;">
+      <img id="md-photo-prev" style="max-height:120px;max-width:100%;margin-top:10px;display:none;">
     </div>
+    <label>Or Photo URL</label>
+    <input type="url" id="md-photo-url" placeholder="https://...">
     <label>Name</label>
-    <input type="text" id="md-name" placeholder="Full name" oninput="mdSyncSlug()">
-    <label>URL Slug <span style="color:var(--muted);font-size:.65rem;letter-spacing:0;text-transform:none;">(lorenzodigital.com/<span id="md-slug-suffix"></span>)</span></label>
-    <input type="text" id="md-slug" placeholder="rimi" oninput="mdSlugTouched=true">
-    <div id="md-slug-err" class="err-msg" style="display:none"></div>
-    <label>Bio</label>
-    <textarea id="md-bio" rows="4" placeholder="Short biography…"></textarea>
-    <label>Active Years</label>
-    <input type="text" id="md-years" placeholder="e.g. 2019 – Present">
-    <label>Height</label>
-    <input type="text" id="md-height" placeholder="e.g. 5'8&quot; / 173cm">
-    <label>Measurements</label>
-    <input type="text" id="md-measurements" placeholder="e.g. 34-24-35">
+    <input type="text" id="md-name" placeholder="Full name">
+    <label>Role</label>
+    <input type="text" id="md-role" placeholder="e.g. Fashion Model, Print, Runway…">
+    <label>Short Bio</label>
+    <textarea id="md-bio" rows="3" placeholder="Brief description…"></textarea>
     <label>Phone</label>
-    <input type="text" id="md-phone" placeholder="+1 234 567 8900">
-    <label>Email</label>
-    <input type="email" id="md-email" placeholder="you@example.com">
-    <label>Instagram</label>
-    <input type="text" id="md-ig" placeholder="@handle">
-    <label>Facebook</label>
-    <input type="text" id="md-facebook" placeholder="/handle">
-    <label>Website</label>
-    <input type="url" id="md-website" placeholder="https://...">
-    <label>Photo Gallery</label>
-    <div class="up-area" id="md-gallery-area"
-      onclick="document.getElementById('md-gallery-files').click()"
-      ondragover="mdGalleryDragOver(event)" ondragleave="mdGalleryDragLeave()" ondrop="mdGalleryDrop(event)">
-      <input type="file" id="md-gallery-files" accept="image/*" multiple onchange="mdGalleryPick(event)">
-      <p>Click or drag & drop — select multiple files</p>
-      <small>JPG, PNG, WebP, GIF supported</small>
+    <div class="field-with-blank">
+      <input type="text" id="md-phone" placeholder="+1 234 567 8900">
+      <label class="blank-toggle"><input type="checkbox" id="md-phone-blank" onchange="mdToggleBlank('md-phone','md-phone-blank')"><span>Leave blank (hide from card)</span></label>
     </div>
-    <div id="md-gallery-thumbs"></div>
+    <label>Email</label>
+    <div class="field-with-blank">
+      <input type="email" id="md-email" placeholder="you@example.com">
+      <label class="blank-toggle"><input type="checkbox" id="md-email-blank" onchange="mdToggleBlank('md-email','md-email-blank')"><span>Leave blank (hide from card)</span></label>
+    </div>
+    <label>Facebook</label>
+    <div class="field-with-blank">
+      <input type="text" id="md-facebook" placeholder="/handle">
+      <label class="blank-toggle"><input type="checkbox" id="md-facebook-blank" onchange="mdToggleBlank('md-facebook','md-facebook-blank')"><span>Leave blank (hide from card)</span></label>
+    </div>
+    <label>Instagram</label>
+    <div class="field-with-blank">
+      <input type="text" id="md-ig" placeholder="@handle">
+      <label class="blank-toggle"><input type="checkbox" id="md-ig-blank" onchange="mdToggleBlank('md-ig','md-ig-blank')"><span>Leave blank (hide from card)</span></label>
+    </div>
+    <label>Website</label>
+    <div class="field-with-blank">
+      <input type="url" id="md-website" placeholder="https://...">
+      <label class="blank-toggle"><input type="checkbox" id="md-website-blank" onchange="mdToggleBlank('md-website','md-website-blank')"><span>Leave blank (hide from card)</span></label>
+    </div>
     <button class="btn-primary" onclick="saveModel()">Save Model</button>
   </div>
 </div>
@@ -1195,10 +1109,6 @@ let adminUser= 'admin';
 let customServices = []; // [{name, icon, desc}] — user-defined extras beyond defaults
 let photographers = []; // [{id, name, role, bio, photo, phone, email, facebook, ig, website}]
 let pgUploadData = null;
-let models = []; // [{id, slug, name, bio, activeYears, height, measurements, phone, email, facebook, ig, website, cover, photos:[url,...]}]
-let mdUploadData = null;   // cover photo preview (data URL)
-let mdUploadFile = null;   // cover photo File
-let mdGalleryQueue = [];   // {dataUrl, file, existingUrl} for the profile gallery
 let isAdmin  = false;
 let currentCat = 'all';
 let lbList=[], lbIdx=0;
@@ -1215,19 +1125,6 @@ function getProfileValue(key){
 }
 function externalUrl(url){
   return /^https?:\/\//i.test(url) ? url : 'https://' + url.replace(/^\/+/, '');
-}
-
-/* ── MODEL SLUGS ── */
-// Paths that a model's slug must never collide with (real routes/files + reserved words)
-const RESERVED_SLUGS = ['','models','admin','gallery','about','photographers','services','contact',
-  'sitemap.xml','robots.txt','manifest.json','favicon.ico','index.html','api'];
-function slugify(str){
-  return (str||'').toLowerCase().trim()
-    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'') // strip accents
-    .replace(/[^a-z0-9\s-]/g,'')
-    .replace(/\s+/g,'-')
-    .replace(/-+/g,'-')
-    .replace(/^-+|-+$/g,'');
 }
 
 /* ── DEFAULT CATEGORIES (shown even if empty, until photos added) ── */
@@ -1276,8 +1173,13 @@ function getSvcMeta(name){
 /* ── CURSOR ── */
 const cur=document.getElementById('cur'), ring=document.getElementById('cur-ring');
 let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
-(function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing);})();
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;},{passive:true});
+(function animCursor(){
+  cur.style.transform=`translate3d(${mx}px,${my}px,0) translate(-50%,-50%)`;
+  rx+=(mx-rx)*.35; ry+=(my-ry)*.35;
+  ring.style.transform=`translate3d(${rx}px,${ry}px,0) translate(-50%,-50%)`;
+  requestAnimationFrame(animCursor);
+})();
 
 /* ── SCROLL ── */
 window.addEventListener('scroll',()=>{
@@ -1298,6 +1200,7 @@ function renderAll(){
   renderServices();
   renderAbout();
   renderPhotographers();
+  renderModels();
   renderContact();
 }
 
@@ -1310,6 +1213,7 @@ function renderHeader(){
     <button class="nav-a" onclick="scrollToSection('#gallery')">Gallery</button>
     <button class="nav-a" onclick="scrollToSection('#about')">About</button>
     <button class="nav-a" onclick="scrollToSection('#photographers')">Photographers</button>
+    <button class="nav-a" onclick="scrollToSection('#models')">Models</button>
     <button class="nav-a" onclick="scrollToSection('#contact')">Contact</button>
     <button id="admin-btn" onclick="handleAdminClick()">${isAdmin?'Exit Admin':'Admin'}</button>
   `;
@@ -1317,11 +1221,6 @@ function renderHeader(){
 }
 
 function scrollToSection(sel){
-  // If we're on /models or a model profile page, those sections are hidden —
-  // navigate home first, then land on the section.
-  if(document.body.classList.contains('route-models') || document.body.classList.contains('route-model-profile') || document.body.classList.contains('route-model-notfound')){
-    location.href = '/' + sel; return;
-  }
   const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
 }
 
@@ -1777,206 +1676,124 @@ async function deletePhotographer(id){
   showToast('Photographer removed.');
 }
 
-/* ══════════════════════════════ MODELS ══════════════════════════════ */
+/* ══════════════════════════════════════════════
+   MODELS — mirrors the Photographers CRUD above
+   ══════════════════════════════════════════════ */
+let models = []; // [{id, name, role, bio, photo, phone, email, facebook, ig, website}]
 
-let currentModelId = null;   // id of the model currently shown on the profile page
-let mdSlugTouched = false;   // becomes true once the admin manually edits the slug field
-
-/* ── ROUTING ── */
-// Decides which "page" to show based on the URL path. Runs once on load —
-// this is a plain multi-page-feel static site, not a client-router SPA,
-// so every navigation (nav links, back/forward) is a normal full page load
-// and Vercel's rewrite (see vercel.json) sends every path to this same
-// index.html, which then figures out what to render.
-async function route(){
-  const raw = decodeURIComponent(location.pathname);
-  const path = raw.replace(/\/+$/,'') || '/';
-
-  document.body.classList.remove('route-models','route-model-profile','route-model-notfound');
-
-  if(path === '/'){
-    return; // homepage — home-section elements are visible by default
-  }
-
-  if(path === '/models'){
-    document.body.classList.add('route-models');
-    renderModelsPage();
-    document.title = 'Models | Studio Lorenzo';
-    return;
-  }
-
-  // Anything else is treated as a model slug, e.g. /rimi
-  const slug = path.slice(1);
-  if(RESERVED_SLUGS.includes(slug) || slug.includes('/')){
-    document.body.classList.add('route-model-notfound');
-    return;
-  }
-
-  let model = models.find(m=>m.slug===slug);
-  if(model){
-    document.body.classList.add('route-model-profile');
-    renderModelProfile(model);
-  }
-  // Always double-check against Firebase in the background — the local
-  // cache might be stale (model added on another device, etc.)
-  try {
-    const { data } = await window._db.from('models').select('*').eq('slug', slug).maybeSingle();
-    if(data){
-      model = mapModelRow(data);
-      const idx = models.findIndex(m=>m.id===model.id);
-      if(idx>-1) models[idx]=model; else models.push(model);
-      await S.set('models', models);
-      document.body.classList.remove('route-model-notfound');
-      document.body.classList.add('route-model-profile');
-      renderModelProfile(model);
-    } else if(!model){
-      document.body.classList.add('route-model-notfound');
-    }
-  } catch(e){
-    console.warn('Could not verify model slug against Firebase:', e);
-    if(!model) document.body.classList.add('route-model-notfound');
-  }
-}
-
-/* ── LISTING PAGE ── */
-function renderModelsPage(){
-  const grid = document.getElementById('models-grid');
+function renderModels(){
+  const grid  = document.getElementById('models-grid');
   const empty = document.getElementById('models-empty');
+
   if(!models.length){
     grid.innerHTML = '';
     empty.style.display = 'block';
   } else {
     empty.style.display = 'none';
-    grid.innerHTML = models.map(m=>{
-      const cover = m.cover
-        ? `<img src="${m.cover}" alt="${m.name}" loading="lazy">`
-        : `<div class="model-card-placeholder">👤</div>`;
-      return `<a class="model-card" href="/${m.slug}">
-        ${cover}
-        <div class="model-card-actions" onclick="event.preventDefault()">
-          <button title="Edit" onclick="event.preventDefault();openEditModel('${m.id}')">✏</button>
-          <button class="del" title="Remove" onclick="event.preventDefault();deleteModel('${m.id}')">✕</button>
+    grid.innerHTML = models.map(md => {
+      const photoHtml = md.photo
+        ? `<div class="photographer-photo-frame"><img class="photographer-photo" src="${md.photo}" alt="${md.name}" loading="lazy"></div>`
+        : `<div class="photographer-photo-placeholder">👤</div>`;
+
+      const editBtn = `<button class="photographer-photo-edit" onclick="openEditModel('${md.id}')" title="Edit">✏</button>`;
+
+      const links = [];
+      const mdVal = (v) => (v && v !== '__blank__') ? v : '';
+      if(mdVal(md.phone))    links.push(`<span>Mobile: <a href="tel:${mdVal(md.phone)}">${mdVal(md.phone)}</a></span>`);
+      if(mdVal(md.email))    links.push(`<span>Email: <a href="mailto:${mdVal(md.email)}">${mdVal(md.email)}</a></span>`);
+      if(mdVal(md.facebook)) links.push(`<span>Facebook: <a href="https://facebook.com/${mdVal(md.facebook).replace(/^[@/]+/,'')}" target="_blank">${mdVal(md.facebook)}</a></span>`);
+      if(mdVal(md.ig))       links.push(`<span>Instagram: <a href="https://instagram.com/${mdVal(md.ig).replace(/^[@/]+/,'')}" target="_blank">${mdVal(md.ig)}</a></span>`);
+      if(mdVal(md.website))  links.push(`<span>Website: <a href="${externalUrl(mdVal(md.website))}" target="_blank">${mdVal(md.website)}</a></span>`);
+
+      const adminActions = `<div class="photographer-card-actions">
+           <button class="pg-action-btn" onclick="openEditModel('${md.id}')">✏ Edit</button>
+           <button class="pg-action-btn del" onclick="deleteModel('${md.id}')">✕ Remove</button>
+         </div>`;
+
+      return `<article class="photographer-card">
+        <div>
+          <div class="photographer-photo-wrap">
+            ${photoHtml}
+            ${editBtn}
+          </div>
+          <div class="photographer-role">${md.role}</div>
+          <h3 class="photographer-name">${md.name}</h3>
+          <p class="photographer-bio">${md.bio||''}</p>
+          ${links.length ? `<div class="photographer-contact">${links.join('')}</div>` : ''}
+          ${adminActions}
         </div>
-        <div class="model-card-info">
-          <div class="model-card-name">${m.name}</div>
-          ${m.activeYears?`<div class="model-card-years">${m.activeYears}</div>`:''}
-        </div>
-      </a>`;
+      </article>`;
     }).join('');
   }
+
   document.getElementById('add-model-wrap').style.display = isAdmin ? 'block' : 'none';
 }
 
-/* ── PROFILE PAGE ── */
-function renderModelProfile(m){
-  currentModelId = m.id;
-  document.title = `${m.name} | Studio Lorenzo Models`;
-  const descMeta = document.querySelector('meta[name="description"]');
-  if(descMeta) descMeta._origContent = descMeta._origContent || descMeta.content;
-
-  const coverWrap = document.getElementById('model-profile-cover-wrap');
-  coverWrap.innerHTML = m.cover
-    ? `<img class="model-profile-cover" src="${m.cover}" alt="${m.name}">`
-    : `<div class="model-profile-cover-placeholder">👤</div>`;
-
-  document.getElementById('mp-name').textContent = m.name;
-  document.getElementById('mp-years').textContent = m.activeYears || '';
-  document.getElementById('mp-years').style.display = m.activeYears ? 'block' : 'none';
-  document.getElementById('mp-bio').textContent = m.bio || '';
-
-  const stats = [];
-  if(m.height)        stats.push(`<div class="stat"><span class="num">${m.height}</span><span class="lbl">Height</span></div>`);
-  if(m.measurements)  stats.push(`<div class="stat"><span class="num">${m.measurements}</span><span class="lbl">Measurements</span></div>`);
-  document.getElementById('mp-stats').innerHTML = stats.join('');
-  document.getElementById('mp-stats').style.display = stats.length ? 'flex' : 'none';
-
-  const links = [];
-  if(m.phone)    links.push(`<a href="tel:${m.phone}">${m.phone}</a>`);
-  if(m.email)    links.push(`<a href="mailto:${m.email}">${m.email}</a>`);
-  if(m.ig)       links.push(`<a href="https://instagram.com/${m.ig.replace(/^[@/]+/,'')}" target="_blank">Instagram</a>`);
-  if(m.facebook) links.push(`<a href="https://facebook.com/${m.facebook.replace(/^[@/]+/,'')}" target="_blank">Facebook</a>`);
-  if(m.website)  links.push(`<a href="${externalUrl(m.website)}" target="_blank">Website</a>`);
-  document.getElementById('mp-links').innerHTML = links.join('');
-
-  const gallery = document.getElementById('mp-gallery');
-  const photos = m.photos || [];
-  gallery.innerHTML = photos.map((url,i)=>
-    `<img src="${url}" alt="${m.name}" loading="lazy" onclick="openModelLb(${JSON.stringify(photos).replace(/"/g,'&quot;')},${i},'${m.name}')">`
-  ).join('');
-}
-
-/* ── ADD / EDIT MODAL ── */
-function mdSyncSlug(){
-  if(mdSlugTouched) return;
-  document.getElementById('md-slug').value = slugify(document.getElementById('md-name').value);
-  document.getElementById('md-slug-preview').textContent = document.getElementById('md-slug').value || 'slug';
-  document.getElementById('md-slug-suffix').textContent = document.getElementById('md-slug').value || 'slug';
-}
-document.addEventListener('input', e=>{
-  if(e.target && e.target.id==='md-slug'){
-    const v = slugify(e.target.value);
-    document.getElementById('md-slug-preview').textContent = v || 'slug';
-    document.getElementById('md-slug-suffix').textContent = v || 'slug';
-  }
-});
-
 function openAddModel(){
-  mdUploadData = null; mdUploadFile = null; mdGalleryQueue = []; mdSlugTouched = false;
+  mdUploadData = null;
+  mdUploadFile = null;
   document.getElementById('md-edit-id').value = '';
   document.getElementById('md-modal-title').textContent = 'Add Model';
   document.getElementById('md-name').value = '';
-  document.getElementById('md-slug').value = '';
-  document.getElementById('md-slug-preview').textContent = 'slug';
-  document.getElementById('md-slug-suffix').textContent = 'slug';
-  document.getElementById('md-slug-err').style.display = 'none';
+  document.getElementById('md-role').value = '';
   document.getElementById('md-bio').value = '';
-  document.getElementById('md-years').value = '';
-  document.getElementById('md-height').value = '';
-  document.getElementById('md-measurements').value = '';
   document.getElementById('md-phone').value = '';
   document.getElementById('md-email').value = '';
-  document.getElementById('md-ig').value = '';
   document.getElementById('md-facebook').value = '';
+  document.getElementById('md-ig').value = '';
   document.getElementById('md-website').value = '';
+  document.getElementById('md-photo-url').value = '';
   document.getElementById('md-photo-prev').style.display = 'none';
   document.getElementById('md-photo-file').value = '';
-  document.getElementById('md-gallery-files').value = '';
-  renderMdGalleryThumbs();
+  ['md-phone','md-email','md-facebook','md-ig','md-website'].forEach(id=>{
+    const cb = document.getElementById(id+'-blank');
+    if(cb){ cb.checked=false; document.getElementById(id).disabled=false; document.getElementById(id).style.opacity=''; }
+  });
   document.getElementById('m-model').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+function mdToggleBlank(fieldId, cbId){
+  const cb = document.getElementById(cbId);
+  const inp = document.getElementById(fieldId);
+  if(cb.checked){ inp.value=''; inp.disabled=true; inp.style.opacity='.35'; }
+  else { inp.disabled=false; inp.style.opacity=''; }
 }
 
 function openEditModel(id){
-  const m = models.find(x=>x.id===id); if(!m) return;
-  mdUploadData = null; mdUploadFile = null; mdSlugTouched = true;
-  mdGalleryQueue = (m.photos||[]).map(url=>({existingUrl:url}));
+  const md = models.find(p=>p.id===id); if(!md) return;
+  mdUploadData = null;
+  mdUploadFile = null;
   document.getElementById('md-edit-id').value = id;
   document.getElementById('md-modal-title').textContent = 'Edit Model';
-  document.getElementById('md-name').value = m.name||'';
-  document.getElementById('md-slug').value = m.slug||'';
-  document.getElementById('md-slug-preview').textContent = m.slug||'slug';
-  document.getElementById('md-slug-suffix').textContent = m.slug||'slug';
-  document.getElementById('md-slug-err').style.display = 'none';
-  document.getElementById('md-bio').value = m.bio||'';
-  document.getElementById('md-years').value = m.activeYears||'';
-  document.getElementById('md-height').value = m.height||'';
-  document.getElementById('md-measurements').value = m.measurements||'';
-  document.getElementById('md-phone').value = m.phone||'';
-  document.getElementById('md-email').value = m.email||'';
-  document.getElementById('md-ig').value = m.ig||'';
-  document.getElementById('md-facebook').value = m.facebook||'';
-  document.getElementById('md-website').value = m.website||'';
+  document.getElementById('md-name').value = md.name||'';
+  document.getElementById('md-role').value = md.role||'';
+  document.getElementById('md-bio').value = md.bio||'';
+  document.getElementById('md-photo-url').value = (!md.photo||md.photo.startsWith('data:'))?'':md.photo;
   const prev = document.getElementById('md-photo-prev');
-  if(m.cover){ prev.src = m.cover; prev.style.display = 'block'; } else { prev.style.display = 'none'; }
+  if(md.photo){prev.src=md.photo;prev.style.display='block';}else{prev.style.display='none';}
   document.getElementById('md-photo-file').value = '';
-  document.getElementById('md-gallery-files').value = '';
-  renderMdGalleryThumbs();
+  const contactFields = ['phone','email','facebook','ig','website'];
+  contactFields.forEach(f=>{
+    const val = md[f];
+    const isBlank = val === '__blank__';
+    const inp = document.getElementById('md-'+f);
+    const cb  = document.getElementById('md-'+f+'-blank');
+    inp.value    = isBlank ? '' : (val||'');
+    inp.disabled = isBlank;
+    inp.style.opacity = isBlank ? '.35' : '';
+    if(cb) cb.checked = isBlank;
+  });
   document.getElementById('m-model').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
+let mdUploadData = null;
+let mdUploadFile = null;
 function mdPhotoPick(e){
-  const file = (e && e.target && e.target.files && e.target.files[0]) || (e && e.files && e.files[0]) || null;
+  const file = (e && e.target && e.target.files && e.target.files[0])
+             || (e && e.files && e.files[0])
+             || null;
   if(!file) return;
   (async () => {
     const compressed = await compressImage(file, 1600, 0.85);
@@ -1986,192 +1803,98 @@ function mdPhotoPick(e){
       mdUploadData = ev.target.result;
       const prev = document.getElementById('md-photo-prev');
       prev.src = mdUploadData; prev.style.display = 'block';
+      document.getElementById('md-photo-url').value = '';
     };
     r.readAsDataURL(compressed);
   })();
 }
 
-function mdGalleryDragOver(e){ e.preventDefault(); document.getElementById('md-gallery-area').classList.add('drag'); }
-function mdGalleryDragLeave(){ document.getElementById('md-gallery-area').classList.remove('drag'); }
-function mdGalleryDrop(e){
-  e.preventDefault();
-  document.getElementById('md-gallery-area').classList.remove('drag');
-  mdGalleryPick({target:{files:e.dataTransfer.files}});
-}
-function mdGalleryPick(e){
-  const files = e.target.files;
-  Array.from(files).forEach(async file=>{
-    if(!file.type.startsWith('image/')) return;
-    const compressed = await compressImage(file);
-    const reader = new FileReader();
-    reader.onload = ev=>{
-      mdGalleryQueue.push({dataUrl:ev.target.result, file:compressed});
-      renderMdGalleryThumbs();
-    };
-    reader.readAsDataURL(compressed);
-  });
-}
-function renderMdGalleryThumbs(){
-  const grid = document.getElementById('md-gallery-thumbs');
-  grid.innerHTML = mdGalleryQueue.map((q,i)=>`
-    <div class="up-thumb">
-      <img src="${q.dataUrl||q.existingUrl}" alt="">
-      <button class="up-thumb-del" onclick="removeMdGalleryItem(${i})">✕</button>
-    </div>`).join('');
-}
-function removeMdGalleryItem(i){ mdGalleryQueue.splice(i,1); renderMdGalleryThumbs(); }
-
-function mapModelRow(r){
-  return {
-    id: r.id,
-    slug: r.slug || '',
-    name: r.name || '',
-    bio: r.bio || '',
-    activeYears: r.active_years || '',
-    height: r.height || '',
-    measurements: r.measurements || '',
-    phone: r.phone || '',
-    email: r.email || '',
-    ig: r.ig || '',
-    facebook: r.facebook || '',
-    website: r.website || '',
-    cover: r.cover_url || '',
-    photos: r.photos || [],
-  };
-}
-
 async function saveModel(){
   const id = document.getElementById('md-edit-id').value;
-  const name = document.getElementById('md-name').value.trim();
-  const slug = slugify(document.getElementById('md-slug').value);
-  const errEl = document.getElementById('md-slug-err');
-  errEl.style.display = 'none';
+  let photoVal = mdUploadData
+    ? null
+    : (document.getElementById('md-photo-url').value.trim() || null);
 
-  if(!name){ showToast('Please enter a name.'); return; }
-  if(!slug){ errEl.textContent = 'Please enter a URL slug.'; errEl.style.display='block'; return; }
-  if(RESERVED_SLUGS.includes(slug)){
-    errEl.textContent = `"${slug}" is a reserved page name — please choose another slug.`;
-    errEl.style.display = 'block';
-    return;
+  function mdFieldVal(f){
+    const cb = document.getElementById('md-'+f+'-blank');
+    if(cb && cb.checked) return '__blank__';
+    return document.getElementById('md-'+f).value.trim();
   }
-  // Uniqueness check (skip the model's own current row when editing)
-  const localDup = models.find(m=>m.slug===slug && m.id!==id);
-  if(localDup){
-    errEl.textContent = 'That slug is already taken by another model.';
-    errEl.style.display = 'block';
-    return;
-  }
-  try {
-    const { data: dupRow } = await window._db.from('models').select('id').eq('slug', slug).maybeSingle();
-    if(dupRow && String(dupRow.id) !== String(id)){
-      errEl.textContent = 'That slug is already taken by another model.';
-      errEl.style.display = 'block';
-      return;
-    }
-  } catch(e){ console.warn('Slug uniqueness check failed (continuing):', e); }
+
+  const data = {
+    id:       id || null,
+    name:     document.getElementById('md-name').value.trim(),
+    role:     document.getElementById('md-role').value.trim() || 'Model',
+    bio:      document.getElementById('md-bio').value.trim(),
+    phone:    mdFieldVal('phone'),
+    email:    mdFieldVal('email'),
+    facebook: mdFieldVal('facebook'),
+    ig:       mdFieldVal('ig'),
+    website:  mdFieldVal('website'),
+    photo:    '',
+  };
+  if(!data.name){ showToast('Please enter a name.'); return; }
 
   showToast('Saving…');
-  const uid = id || (Date.now()+Math.random().toString(36).slice(2));
 
-  // Cover photo
-  let coverUrl = null;
   if(mdUploadFile){
-    const ext = mdUploadFile.name.split('.').pop().toLowerCase() || 'jpg';
-    const path = `models/${uid}/cover.${ext}`;
-    const { error: upErr } = await window._db.storage.from('photos')
-      .upload(path, mdUploadFile, { upsert:true, contentType: mdUploadFile.type });
-    if(upErr){ showToast('Cover upload failed: '+upErr.message); }
-    else {
+    const ext  = mdUploadFile.name.split('.').pop().toLowerCase() || 'jpg';
+    const uid  = id || (Date.now()+Math.random().toString(36).slice(2));
+    const path = `model/${uid}.${ext}`;
+    const { error: upErr } = await window._db.storage
+      .from('photos')
+      .upload(path, mdUploadFile, { upsert: true, contentType: mdUploadFile.type });
+    if(upErr){
+      showToast('Storage upload failed: ' + upErr.message);
+      console.error('Storage upload error:', upErr);
+    } else {
       const { data: ud } = window._db.storage.from('photos').getPublicUrl(path);
-      coverUrl = ud.publicUrl + '?t=' + Date.now();
+      photoVal = ud.publicUrl + '?t=' + Date.now();
     }
   }
-  if(!coverUrl && id){
-    const existing = models.find(m=>m.id===id);
-    if(existing) coverUrl = existing.cover || '';
+  if(!photoVal) photoVal = document.getElementById('md-photo-url').value.trim();
+  if(!photoVal && id){
+    const existing = models.find(p=>p.id===id);
+    if(existing) photoVal = existing.photo || '';
   }
 
-  // Gallery photos — upload any new files, keep existing URLs, in queue order
-  const galleryUrls = [];
-  for(let i=0;i<mdGalleryQueue.length;i++){
-    const item = mdGalleryQueue[i];
-    if(item.existingUrl){ galleryUrls.push(item.existingUrl); continue; }
-    if(item.file){
-      const ext = (item.file.name.split('.').pop()||'jpg').toLowerCase();
-      const path = `models/${uid}/gallery/${Date.now()}_${i}.${ext}`;
-      const { error: upErr } = await window._db.storage.from('photos')
-        .upload(path, item.file, { contentType: item.file.type });
-      if(upErr){ console.error('Gallery upload error:', upErr); continue; }
-      const { data: ud } = window._db.storage.from('photos').getPublicUrl(path);
-      galleryUrls.push(ud.publicUrl + '?t=' + Date.now());
-    }
-  }
-
-  const row = {
-    slug, name,
-    bio: document.getElementById('md-bio').value.trim(),
-    active_years: document.getElementById('md-years').value.trim(),
-    height: document.getElementById('md-height').value.trim(),
-    measurements: document.getElementById('md-measurements').value.trim(),
-    phone: document.getElementById('md-phone').value.trim(),
-    email: document.getElementById('md-email').value.trim(),
-    ig: document.getElementById('md-ig').value.trim(),
-    facebook: document.getElementById('md-facebook').value.trim(),
-    website: document.getElementById('md-website').value.trim(),
-    cover_url: coverUrl || '',
-    photos: galleryUrls,
-  };
+  data.photo = photoVal || '';
+  data._new = !id;
 
   try {
-    let savedId = id;
-    if(id){
-      const { error } = await window._db.from('models').update(row).eq('id', id);
-      if(error) throw error;
-    } else {
-      const { data: inserted, error } = await window._db.from('models').insert(row).select().single();
-      if(error) throw error;
-      savedId = inserted.id;
-    }
-    const localModel = mapModelRow({ id: savedId, ...row });
-    const idx = models.findIndex(m=>m.id===savedId);
-    if(idx>-1) models[idx] = localModel; else models.push(localModel);
-    await S.set('models', models);
+    const savedId = await saveModelToFirebase(data);
+    data.id = savedId;
+    data._new = undefined;
 
+    if(id){
+      const idx = models.findIndex(p=>p.id===id);
+      if(idx>-1) models[idx] = data;
+    } else {
+      models.push(data);
+    }
+    await S.set('models', models);
+    if(data.photo){
+      const cache = await S.get('mdPhotoCache', {});
+      cache[String(savedId)] = data.photo;
+      await S.set('mdPhotoCache', cache);
+    }
     closeM('m-model');
-    if(document.body.classList.contains('route-models')) renderModelsPage();
-    if(currentModelId===savedId) renderModelProfile(localModel);
+    renderModels();
     showToast(id ? 'Model updated!' : 'Model added!');
   } catch(e){
     showToast('Save failed: '+e.message);
-    console.error('Model save error:', e);
   }
 }
 
 async function deleteModel(id){
-  if(!confirm('Remove this model profile? This cannot be undone.')) return;
+  if(!confirm('Remove this model?')) return;
   try {
-    const { error } = await window._db.from('models').delete().eq('id', id);
-    if(error) console.warn('Delete model error:', error.message);
+    await deleteModelFromFirebase(id);
   } catch(e){ console.warn(e); }
-  models = models.filter(m=>m.id!==id);
+  models = models.filter(p=>p.id!==id);
   await S.set('models', models);
-  if(document.body.classList.contains('route-models')) renderModelsPage();
-  if(currentModelId===id){ location.href = '/models'; return; }
+  renderModels();
   showToast('Model removed.');
-}
-
-async function loadModelsFromFirebase(){
-  try {
-    const { data, error } = await window._db.from('models').select('*').order('created_at', { ascending:true });
-    if(error){ console.warn('models table:', error.message); return; }
-    models = data.map(mapModelRow);
-    await S.set('models', models);
-    if(document.body.classList.contains('route-models')) renderModelsPage();
-    if(document.body.classList.contains('route-model-profile') && currentModelId){
-      const m = models.find(x=>x.id===currentModelId);
-      if(m) renderModelProfile(m);
-    }
-  } catch(e){ console.warn('Could not load models:', e); }
 }
 
 function renderContact(){
@@ -2196,10 +1919,6 @@ function renderContact(){
 /* ── LIGHTBOX ── */
 function openLb(cat,idx){
   lbList=getPhotosForCat(cat); lbIdx=idx; showLb();
-}
-function openModelLb(photos,idx,modelName){
-  lbList = photos.map(url=>({url, title:'', category:modelName||''}));
-  lbIdx = idx; showLb();
 }
 function showLb(){
   const p=lbList[lbIdx];
@@ -2783,6 +2502,59 @@ async function deletePhotographerFromFirebase(id){
   if(error) console.warn('Delete photographer error:', error.message);
 }
 
+/* ── FIREBASE: MODELS (mirrors photographers table/logic) ── */
+async function loadModelsFromFirebase(){
+  try {
+    const { data, error } = await window._db
+      .from('models')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if(error){ console.warn('models table:', error.message); return; }
+    const localPhotoCache = await S.get('mdPhotoCache', {});
+    models = data.map(r=>({
+      id:       r.id,
+      name:     r.name     || '',
+      role:     r.role     || 'Model',
+      bio:      r.bio      || '',
+      photo:    r.photo_url || localPhotoCache[String(r.id)] || '',
+      phone:    r.phone    || '',
+      email:    r.email    || '',
+      facebook: r.facebook || '',
+      ig:       r.ig       || '',
+      website:  r.website  || '',
+    }));
+    renderModels();
+  } catch(e){ console.warn('Could not load models:', e); }
+}
+
+async function saveModelToFirebase(data){
+  const row = {
+    name:      data.name,
+    role:      data.role,
+    bio:       data.bio,
+    photo_url: data.photo,
+    phone:     data.phone,
+    email:     data.email,
+    facebook:  data.facebook,
+    ig:        data.ig,
+    website:   data.website,
+  };
+  if(data.id && !data._new){
+    const { error } = await window._db.from('models').update(row).eq('id', data.id);
+    if(error) throw error;
+    return data.id;
+  } else {
+    const { data: inserted, error } = await window._db.from('models').insert(row).select().single();
+    if(error) throw error;
+    return inserted.id;
+  }
+}
+
+async function deleteModelFromFirebase(id){
+  const { error } = await window._db.from('models').delete().eq('id', id);
+  if(error) console.warn('Delete model error:', error.message);
+}
+
 /* ── FIREBASE: BIO PHOTO (separate from photographer photo) ── */
 async function uploadBioPhoto(file){
   showToast('Uploading bio photo…');
@@ -2872,26 +2644,8 @@ async function init(){
   const savedBioPhoto = await S.get('bioPhoto', '');
   if(savedBioPhoto) bio.photo = savedBioPhoto;
   settings      = await S.get('settings', {logo:'Studio Lorenzo',heroTitle:'Through Every|Lens & Light',heroSub:'Photography that captures the soul of every moment — from sweeping landscapes to intimate portraits.',cSub:'Available for commissions, collaborations, and exhibitions.'});
-  customServices= await S.get('customServices', []);
-  photographers = await S.get('photographers', []);
-  models        = await S.get('models', []);
-
-  // Restore admin session if it was active before reload
-  if(sessionStorage.getItem('slz_admin_session') === '1'){
-    isAdmin = true;
-    document.body.classList.add('admin');
-  }
-
-  // Render immediately with cached/local data so the page (including nav)
-  // is interactive right away — don't make visitors wait on a network
-  // round-trip to Firebase just to see the nav or content.
-  renderAll();
-  // Decide which "page" (home / models listing / model profile) to show,
-  // using the local cache first — refined against Firebase inside route().
-  route();
-
-  // Always fetch credentials from Firebase in the background — it is the
-  // source of truth, but it should never block first paint.
+  // Always fetch credentials from Firebase first — it is the source of truth.
+  // If no rows exist (deleted/reset), fall back to hardcoded defaults and clear localStorage.
   try {
     const { data: rows } = await window._db.from('site_config')
       .select('key,value').in('key', ['adminPass','adminUser']);
@@ -2917,7 +2671,17 @@ async function init(){
   // Always keep localStorage in sync with whatever we resolved
   S.set('adminPass', adminPass);
   S.set('adminUser', adminUser);
+  customServices= await S.get('customServices', []);
+  photographers = await S.get('photographers', []);
+  models        = await S.get('models', []);
 
+  // Restore admin session if it was active before reload
+  if(sessionStorage.getItem('slz_admin_session') === '1'){
+    isAdmin = true;
+    document.body.classList.add('admin');
+  }
+
+  renderAll();
   await loadPhotosFromFirebase();
   await loadPhotographersFromFirebase();
   await loadModelsFromFirebase();
@@ -2946,9 +2710,6 @@ function closeMobileNav(){
 }
 function mobileNavGo(sel){
   closeMobileNav();
-  if(document.body.classList.contains('route-models') || document.body.classList.contains('route-model-profile') || document.body.classList.contains('route-model-notfound')){
-    location.href = '/' + sel; return;
-  }
   setTimeout(()=>{ const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'}); }, 120);
 }
 function mobileAdminClick(){
@@ -2982,8 +2743,13 @@ function syncMobAdminBtn(){
 })();
 
 /* ── BACK TO TOP ── */
-/* Always visible — no scroll-based show/hide, so there's no dependency on
-   scroll events or thresholds that could make it feel delayed. */
+(function(){
+  const btn=document.getElementById('back-to-top');
+  if(!btn) return;
+  window.addEventListener('scroll',()=>{
+    btn.classList.toggle('show', window.scrollY>600);
+  },{passive:true});
+})();
 
 /* ── COOKIE / PRIVACY NOTICE ── */
 (function(){
