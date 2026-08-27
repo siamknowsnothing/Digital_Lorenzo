@@ -478,7 +478,11 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 <header id="hdr">
   <a class="logo" href="#hero" onclick="return false;" id="logo-el">Studio Lorenzo</a>
   <nav id="main-nav">
-    <!-- built by JS -->
+    <button class="nav-a" onclick="scrollToSection('#gallery')">Gallery</button>
+    <button class="nav-a" onclick="scrollToSection('#about')">About</button>
+    <button class="nav-a" onclick="scrollToSection('#photographers')">Photographers</button>
+    <button class="nav-a" onclick="scrollToSection('#contact')">Contact</button>
+    <button id="admin-btn" onclick="handleAdminClick()">Admin</button>
   </nav>
   <button id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -2291,8 +2295,22 @@ async function init(){
   const savedBioPhoto = await S.get('bioPhoto', '');
   if(savedBioPhoto) bio.photo = savedBioPhoto;
   settings      = await S.get('settings', {logo:'Studio Lorenzo',heroTitle:'Through Every|Lens & Light',heroSub:'Photography that captures the soul of every moment — from sweeping landscapes to intimate portraits.',cSub:'Available for commissions, collaborations, and exhibitions.'});
-  // Always fetch credentials from Firebase first — it is the source of truth.
-  // If no rows exist (deleted/reset), fall back to hardcoded defaults and clear localStorage.
+  customServices= await S.get('customServices', []);
+  photographers = await S.get('photographers', []);
+
+  // Restore admin session if it was active before reload
+  if(sessionStorage.getItem('slz_admin_session') === '1'){
+    isAdmin = true;
+    document.body.classList.add('admin');
+  }
+
+  // Render immediately with cached/local data so the page (including nav)
+  // is interactive right away — don't make visitors wait on a network
+  // round-trip to Firebase just to see the nav or content.
+  renderAll();
+
+  // Always fetch credentials from Firebase in the background — it is the
+  // source of truth, but it should never block first paint.
   try {
     const { data: rows } = await window._db.from('site_config')
       .select('key,value').in('key', ['adminPass','adminUser']);
@@ -2318,16 +2336,7 @@ async function init(){
   // Always keep localStorage in sync with whatever we resolved
   S.set('adminPass', adminPass);
   S.set('adminUser', adminUser);
-  customServices= await S.get('customServices', []);
-  photographers = await S.get('photographers', []);
 
-  // Restore admin session if it was active before reload
-  if(sessionStorage.getItem('slz_admin_session') === '1'){
-    isAdmin = true;
-    document.body.classList.add('admin');
-  }
-
-  renderAll();
   await loadPhotosFromFirebase();
   await loadPhotographersFromFirebase();
   await loadBioFromFirebase();
