@@ -1628,7 +1628,7 @@ async function savePhotographer(){
         // Don't return — still save the other fields without photo
       } else {
         const { data: ud } = window._db.storage.from('photos').getPublicUrl(path);
-        photoVal = ud.publicUrl + '?t=' + Date.now();
+        photoVal = ud.publicUrl + '&t=' + Date.now();
         console.log('Photo uploaded OK:', photoVal);
       }
     }
@@ -1705,7 +1705,7 @@ async function savePhotographer(){
       console.error('Storage upload error:', upErr);
     } else {
       const { data: ud } = window._db.storage.from('photos').getPublicUrl(path);
-      photoVal = ud.publicUrl + '?t=' + Date.now();
+      photoVal = ud.publicUrl + '&t=' + Date.now();
       console.log('Photo uploaded OK:', photoVal);
     }
   }
@@ -1995,7 +1995,7 @@ async function saveModel(){
       console.error('Storage upload error:', upErr);
     } else {
       const { data: ud } = window._db.storage.from('photos').getPublicUrl(path);
-      photoVal = ud.publicUrl + '?t=' + Date.now();
+      photoVal = ud.publicUrl + '&t=' + Date.now();
     }
   }
   if(!photoVal) photoVal = document.getElementById('md-photo-url').value.trim();
@@ -2787,7 +2787,7 @@ async function uploadPhotographerPhoto(input){
     .upload(path, file, { upsert: true, contentType: file.type });
   if(upErr){ showToast('Upload failed: '+upErr.message); return; }
   const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
-  const url = urlData.publicUrl + '?t=' + Date.now();
+  const url = urlData.publicUrl + '&t=' + Date.now();
   // Save to bio.leadPg.photo (NOT bio.photo — that's the biography/about section photo)
   if(!bio.leadPg) bio.leadPg = {};
   bio.leadPg.photo = url;
@@ -2945,7 +2945,7 @@ async function uploadBioPhoto(file){
     .upload(path, file, { upsert: true, contentType: file.type });
   if(upErr){ showToast('Bio photo upload failed: '+upErr.message); return null; }
   const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
-  return urlData.publicUrl + '?t=' + Date.now();
+  return urlData.publicUrl + '&t=' + Date.now();
 }
 
 /* ── MODALS ── */
