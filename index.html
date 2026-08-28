@@ -196,6 +196,19 @@ body.admin .photographer-photo-edit{display:flex;}
 
 /* ── MODELS (shares Photographer card styling) ── */
 #models{background:var(--bg);}
+.model-filter-bar{display:flex;flex-direction:column;gap:20px;margin-bottom:40px;}
+.model-search-wrap{position:relative;max-width:360px;}
+.model-search-wrap input{padding-left:38px;}
+.model-search-wrap::before{content:'⚲';position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted2);font-size:.95rem;pointer-events:none;}
+.model-search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted2);cursor:none;font-size:.85rem;padding:6px;display:none;}
+.model-search-clear.show{display:block;}
+.model-search-clear:hover{color:var(--gold);}
+.az-filter{display:flex;flex-wrap:wrap;gap:6px;}
+.az-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:'Lato',sans-serif;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:none;transition:all .2s;flex-shrink:0;}
+.az-btn:first-child{width:auto;padding:0 14px;}
+.az-btn:not(.disabled):hover{border-color:var(--gold);color:var(--gold);}
+.az-btn.active{background:var(--gold);border-color:var(--gold);color:#080808;font-weight:700;}
+.az-btn.disabled{opacity:.28;cursor:default;pointer-events:none;}
 
 /* ── SERVICES ── */
 #services{background:var(--surface);}
@@ -423,6 +436,11 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   .photographers-grid{grid-template-columns:1fr;}
   .photographer-card{padding:28px 22px;}
 
+  /* models search / A-Z filter */
+  .model-search-wrap{max-width:none;}
+  .az-btn{width:28px;height:28px;font-size:.65rem;}
+  .az-btn:first-child{width:auto;padding:0 12px;}
+
   /* services */
   .services-grid{grid-template-columns:1fr 1fr;}
   .service-card{padding:24px 18px;}
@@ -577,12 +595,19 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 <section id="models" class="reveal">
   <div class="sec-label">Talent</div>
   <h2 class="sec-title">Our <i>Models</i></h2>
+  <div class="model-filter-bar" id="model-filter-bar" style="display:none;">
+    <div class="model-search-wrap">
+      <input type="text" id="model-search" placeholder="Search models by name…" oninput="onModelSearchInput()" aria-label="Search models">
+      <button class="model-search-clear" id="model-search-clear" onclick="clearModelSearch()" title="Clear search">✕</button>
+    </div>
+    <div class="az-filter" id="az-filter"></div>
+  </div>
   <div class="photographers-grid" id="models-grid">
     <!-- rendered by JS -->
   </div>
   <div class="empty" id="models-empty" style="display:none;">
-    <big>🎭</big>
-    <p>No models added yet.</p>
+    <big id="models-empty-icon">🎭</big>
+    <p id="models-empty-text">No models added yet.</p>
   </div>
   <div style="display:none;margin-top:24px;" id="add-model-wrap">
     <button class="ab-btn hl" onclick="openAddModel()" style="border-color:var(--gold);color:var(--gold);padding:10px 22px;font-size:.72rem;letter-spacing:.12em;">+ Add Model</button>
@@ -1679,17 +1704,76 @@ async function deletePhotographer(id){
    MODELS — mirrors the Photographers CRUD above
    ══════════════════════════════════════════════ */
 let models = []; // [{id, name, role, bio, photo, phone, email, facebook, ig, website}]
+let modelSearchQuery = '';
+let modelLetterFilter = 'ALL';
+
+function onModelSearchInput(){
+  modelSearchQuery = document.getElementById('model-search').value.trim().toLowerCase();
+  document.getElementById('model-search-clear').classList.toggle('show', modelSearchQuery.length>0);
+  renderModels();
+}
+function clearModelSearch(){
+  document.getElementById('model-search').value = '';
+  modelSearchQuery = '';
+  document.getElementById('model-search-clear').classList.remove('show');
+  renderModels();
+}
+function setModelLetter(letter){
+  modelLetterFilter = letter;
+  renderModels();
+}
+function getFilteredModels(){
+  return models
+    .filter(md=>{
+      const name = (md.name||'').trim();
+      if(modelSearchQuery && !name.toLowerCase().includes(modelSearchQuery)) return false;
+      if(modelLetterFilter!=='ALL' && name.charAt(0).toUpperCase()!==modelLetterFilter) return false;
+      return true;
+    })
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+function renderAzFilter(){
+  const bar = document.getElementById('az-filter');
+  const present = new Set(models.map(m=>(m.name||'').trim().charAt(0).toUpperCase()).filter(Boolean));
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  let html = `<button class="az-btn ${modelLetterFilter==='ALL'?'active':''}" onclick="setModelLetter('ALL')">All</button>`;
+  html += letters.map(L=>{
+    const has = present.has(L);
+    return `<button class="az-btn ${modelLetterFilter===L?'active':''} ${has?'':'disabled'}"
+      ${has?`onclick="setModelLetter('${L}')"`:'tabindex="-1" aria-disabled="true"'}>${L}</button>`;
+  }).join('');
+  bar.innerHTML = html;
+}
 
 function renderModels(){
   const grid  = document.getElementById('models-grid');
   const empty = document.getElementById('models-empty');
+  const emptyText = document.getElementById('models-empty-text');
+  const emptyIcon = document.getElementById('models-empty-icon');
+  const filterBar = document.getElementById('model-filter-bar');
 
   if(!models.length){
     grid.innerHTML = '';
     empty.style.display = 'block';
+    emptyIcon.textContent = '🎭';
+    emptyText.textContent = 'No models added yet.';
+    filterBar.style.display = 'none';
+    document.getElementById('add-model-wrap').style.display = isAdmin ? 'block' : 'none';
+    return;
+  }
+
+  filterBar.style.display = 'flex';
+  renderAzFilter();
+  const list = getFilteredModels();
+
+  if(!list.length){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    emptyIcon.textContent = '🔍';
+    emptyText.textContent = 'No models match your search.';
   } else {
     empty.style.display = 'none';
-    grid.innerHTML = models.map(md => {
+    grid.innerHTML = list.map(md => {
       const photoHtml = md.photo
         ? `<div class="photographer-photo-frame"><img class="photographer-photo" src="${md.photo}" alt="${md.name}" loading="lazy"></div>`
         : `<div class="photographer-photo-placeholder">👤</div>`;
