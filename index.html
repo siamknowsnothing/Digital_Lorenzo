@@ -210,6 +210,40 @@ body.admin .photographer-photo-edit{display:flex;}
 .az-btn.active{background:var(--gold);border-color:var(--gold);color:#080808;font-weight:700;}
 .az-btn.disabled{opacity:.28;cursor:default;pointer-events:none;}
 
+/* ── MODEL LANDING PAGE ── */
+#model-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
+body.viewing-model #model-page{display:block;}
+body.viewing-model #hero,
+body.viewing-model #gallery,
+body.viewing-model #services,
+body.viewing-model #about,
+body.viewing-model #photographers,
+body.viewing-model #models,
+body.viewing-model #contact{display:none;}
+.mp-back{display:inline-flex;align-items:center;gap:8px;background:none;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;cursor:none;margin-bottom:44px;transition:color .2s;}
+.mp-back:hover{color:var(--gold);}
+.mp-hero{display:grid;grid-template-columns:260px 1fr;gap:56px;align-items:start;margin-bottom:64px;}
+@media(max-width:760px){.mp-hero{grid-template-columns:1fr;gap:28px;}}
+.mp-photo-frame{width:100%;aspect-ratio:3/4;background:var(--surface2);border:1px solid rgba(200,169,110,.25);overflow:hidden;position:relative;}
+.mp-photo-frame img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(8%);}
+.mp-photo-frame .ph-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--muted2);}
+.mp-role{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+.mp-name{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,4.5vw,3.4rem);line-height:1.1;margin-bottom:20px;}
+.mp-bio{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:rgba(236,232,225,.75);line-height:1.85;max-width:560px;margin-bottom:28px;}
+.mp-contact{display:grid;gap:9px;font-size:.82rem;color:rgba(236,232,225,.7);}
+.mp-contact a{color:var(--gold);text-decoration:none;cursor:none;}
+.mp-contact a:hover{text-decoration:underline;}
+.mp-gallery-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:32px;}
+.mp-admin-actions{display:none;gap:10px;}
+body.admin .mp-admin-actions{display:flex;}
+.mp-empty{text-align:center;padding:64px 0;color:var(--muted2);}
+.mp-empty big{font-size:2.6rem;display:block;margin-bottom:12px;opacity:.25;}
+.mp-photo-actions{position:absolute;top:10px;right:10px;display:none;gap:6px;}
+body.admin .mp-photo-actions{display:flex;}
+.mp-notfound{text-align:center;padding:100px 0;}
+.mp-notfound h2{font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:14px;}
+.mp-notfound p{color:var(--muted);margin-bottom:28px;}
+
 /* ── SERVICES ── */
 #services{background:var(--surface);}
 .services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);}
@@ -614,6 +648,11 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   </div>
 </section>
 
+<!-- ── MODEL LANDING PAGE ── -->
+<section id="model-page">
+  <div id="model-page-inner"></div>
+</section>
+
 <!-- ── CONTACT ── -->
 <section id="contact" class="reveal">
   <div class="sec-label">Get in Touch</div>
@@ -889,6 +928,26 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
       <label class="blank-toggle"><input type="checkbox" id="md-website-blank" onchange="mdToggleBlank('md-website','md-website-blank')"><span>Leave blank (hide from card)</span></label>
     </div>
     <button class="btn-primary" onclick="saveModel()">Save Model</button>
+  </div>
+</div>
+
+<!-- ── MODEL GALLERY PHOTO MODAL ── -->
+<div class="overlay" id="m-model-photo">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-model-photo')">✕</button>
+    <h2 id="mp-modal-title">Add Gallery Photos</h2>
+    <p class="sub" id="mp-modal-sub">Upload photos to this model's dedicated gallery.</p>
+    <input type="hidden" id="mp-model-id">
+    <label>Upload Images (select multiple)</label>
+    <div class="up-area" id="mp-up-area"
+      onclick="document.getElementById('mp-up-files').click()"
+      ondragover="mpDragOver(event)" ondragleave="mpDragLeave()" ondrop="mpDrop(event)">
+      <input type="file" id="mp-up-files" accept="image/*" multiple onchange="mpPick(event)">
+      <p>Click or drag & drop — select multiple files</p>
+      <small>JPG, PNG, WebP, GIF supported</small>
+    </div>
+    <div id="mp-up-thumbs"></div>
+    <button class="btn-primary" onclick="saveModelPhotos()">Save Photos</button>
   </div>
 </div>
 
@@ -1788,6 +1847,7 @@ function renderModels(){
       if(mdVal(md.ig))       links.push(`<span>Instagram: <a href="https://instagram.com/${mdVal(md.ig).replace(/^[@/]+/,'')}" target="_blank">${mdVal(md.ig)}</a></span>`);
       if(mdVal(md.website))  links.push(`<span>Website: <a href="${externalUrl(mdVal(md.website))}" target="_blank">${mdVal(md.website)}</a></span>`);
 
+      const slug = slugify(md.name);
       const adminActions = `<div class="photographer-card-actions">
            <button class="pg-action-btn" onclick="openEditModel('${md.id}')">✏ Edit</button>
            <button class="pg-action-btn del" onclick="deleteModel('${md.id}')">✕ Remove</button>
@@ -1803,6 +1863,9 @@ function renderModels(){
           <h3 class="photographer-name">${md.name}</h3>
           <p class="photographer-bio">${md.bio||''}</p>
           ${links.length ? `<div class="photographer-contact">${links.join('')}</div>` : ''}
+          <div style="margin-top:16px;">
+            <a class="pg-action-btn" style="display:inline-block;text-decoration:none;" href="/model/${slug}" onclick="return goToModelPage(event,'${slug}')">View Profile →</a>
+          </div>
           ${adminActions}
         </div>
       </article>`;
@@ -1978,6 +2041,240 @@ async function deleteModel(id){
   await S.set('models', models);
   renderModels();
   showToast('Model removed.');
+  // If the deleted model's page is currently open, go home
+  if(currentModelSlug && slugify(models.find(m=>m.id===id)?.name||'')===currentModelSlug) exitModelPage();
+}
+
+/* ══════════════════════════════════════════════════════
+   MODEL LANDING PAGES  —  /model/<slug>
+   ══════════════════════════════════════════════════════ */
+let currentModelSlug = null;   // slug currently shown, or null
+let currentModelObj  = null;   // resolved model object for the open page
+let modelGallery      = [];    // photos for the currently-open model page
+let mpUploadQueue     = [];    // queue for the model-gallery upload modal
+const _origTitle = document.title;
+const _origDesc  = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+
+function slugify(name){
+  return (name||'').toString().trim().toLowerCase()
+    .replace(/[^a-z0-9\s-]/g,'')
+    .replace(/\s+/g,'-')
+    .replace(/-+/g,'-')
+    .replace(/^-|-$/g,'') || 'model';
+}
+
+function getRouteModelSlug(){
+  const m = location.pathname.match(/^\/model\/([^/]+)\/?$/i);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+// Called from the "View Profile →" link — keeps normal middle-click/
+// open-in-new-tab behaviour working (real href) while intercepting a
+// plain left click for instant, no-reload SPA navigation.
+function goToModelPage(e, slug){
+  if(e && (e.metaKey || e.ctrlKey || e.shiftKey || e.button===1)) return true; // let browser handle it
+  if(e) e.preventDefault();
+  navigateToModel(slug);
+  return false;
+}
+
+function navigateToModel(slug){
+  if(location.pathname !== '/model/'+slug){
+    history.pushState({model:slug}, '', '/model/'+slug);
+  }
+  renderModelRoute(slug);
+  window.scrollTo(0,0);
+}
+
+function exitModelPage(){
+  if(location.pathname !== '/'){
+    history.pushState({}, '', '/');
+  }
+  document.body.classList.remove('viewing-model');
+  currentModelSlug = null;
+  currentModelObj  = null;
+  document.title = _origTitle;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if(metaDesc) metaDesc.setAttribute('content', _origDesc);
+  window.scrollTo(0,0);
+}
+
+window.addEventListener('popstate', () => {
+  const slug = getRouteModelSlug();
+  if(slug) renderModelRoute(slug);
+  else exitModelPage();
+});
+
+// Entry point called on first page load AND on client-side nav
+async function renderModelRoute(slug){
+  currentModelSlug = slug;
+  document.body.classList.add('viewing-model');
+  const md = models.find(m => slugify(m.name) === slug);
+  if(!md){
+    // models may not have finished loading yet on a hard refresh —
+    // render a soft "loading" state; init() re-calls this once loaded.
+    document.getElementById('model-page-inner').innerHTML = models.length
+      ? `<div class="mp-notfound"><h2>Model Not Found</h2><p>We couldn't find a profile at this address.</p><button class="hero-cta" onclick="exitModelPage()" style="cursor:none;">← Back to Site</button></div>`
+      : `<div class="mp-notfound"><h2>Loading…</h2></div>`;
+    return;
+  }
+  currentModelObj = md;
+  renderModelPage(md);
+  await loadModelGalleryFromFirebase(md.id);
+}
+
+function renderModelPage(md){
+  document.title = `${md.name} | ${settings.logo||'Studio Lorenzo'} Models`;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  const descText = (md.bio || `${md.name} — ${md.role||'Model'} represented by ${settings.logo||'Studio Lorenzo'}.`).slice(0,160);
+  if(metaDesc) metaDesc.setAttribute('content', descText);
+
+  const photoHtml = md.photo
+    ? `<img src="${md.photo}" alt="${md.name}">`
+    : `<div class="ph-placeholder">👤</div>`;
+
+  const mdVal = (v) => (v && v !== '__blank__') ? v : '';
+  const links = [];
+  if(mdVal(md.phone))    links.push(`<span>Mobile: <a href="tel:${mdVal(md.phone)}">${mdVal(md.phone)}</a></span>`);
+  if(mdVal(md.email))    links.push(`<span>Email: <a href="mailto:${mdVal(md.email)}">${mdVal(md.email)}</a></span>`);
+  if(mdVal(md.facebook)) links.push(`<span>Facebook: <a href="https://facebook.com/${mdVal(md.facebook).replace(/^[@/]+/,'')}" target="_blank">${mdVal(md.facebook)}</a></span>`);
+  if(mdVal(md.ig))       links.push(`<span>Instagram: <a href="https://instagram.com/${mdVal(md.ig).replace(/^[@/]+/,'')}" target="_blank">${mdVal(md.ig)}</a></span>`);
+  if(mdVal(md.website))  links.push(`<span>Website: <a href="${externalUrl(mdVal(md.website))}" target="_blank">${mdVal(md.website)}</a></span>`);
+
+  document.getElementById('model-page-inner').innerHTML = `
+    <button class="mp-back" onclick="exitModelPage()">← Back to Site</button>
+    <div class="mp-hero">
+      <div class="mp-photo-frame">${photoHtml}</div>
+      <div>
+        <div class="mp-role">${md.role||'Model'}</div>
+        <h1 class="mp-name">${md.name}</h1>
+        ${md.bio ? `<p class="mp-bio">${md.bio}</p>` : ''}
+        ${links.length ? `<div class="mp-contact">${links.join('')}</div>` : ''}
+      </div>
+    </div>
+    <div class="mp-gallery-head">
+      <h2 class="sec-title" style="margin-bottom:0;">${md.name.split(' ')[0]}'s <i>Gallery</i></h2>
+      <div class="mp-admin-actions">
+        <button class="ab-btn hl" onclick="openAddModelPhotos('${md.id}')">+ Add Photos</button>
+      </div>
+    </div>
+    <div id="mp-gallery-grid"></div>`;
+}
+
+async function loadModelGalleryFromFirebase(modelId){
+  try {
+    // Note: filtered by model_id only (no server-side orderBy) — combining
+    // an equality filter with orderBy on a different field would require a
+    // manual Firestore composite index. Sorting client-side avoids that.
+    const { data, error } = await window._db
+      .from('model_photos')
+      .select('*')
+      .eq('model_id', modelId);
+    if(error){ console.warn('model_photos collection:', error.message); modelGallery = []; }
+    else {
+      modelGallery = data
+        .map(p=>({ id:p.id, title:p.title||'', url:p.image_url, created_at:p.created_at||'' }))
+        .sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+    }
+  } catch(e){ console.warn('Could not load model gallery:', e); modelGallery = []; }
+  renderModelGalleryGrid();
+}
+
+function renderModelGalleryGrid(){
+  const grid = document.getElementById('mp-gallery-grid');
+  if(!grid) return; // user may have navigated away already
+  if(!modelGallery.length){
+    grid.innerHTML = `<div class="mp-empty"><big>📷</big>${isAdmin?'No photos yet. Click <b>+ Add Photos</b> above.':'No photos yet.'}</div>`;
+    return;
+  }
+  grid.innerHTML = `<div class="masonry">
+    ${modelGallery.map((p,i)=>`
+      <div class="photo-item" onclick="openModelLb(${i})">
+        <img src="${p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy">
+        <div class="photo-overlay">
+          <div class="photo-title">${p.title||''}</div>
+        </div>
+        <div class="mp-photo-actions" onclick="event.stopPropagation()">
+          <button class="pa-btn pa-del" onclick="deleteModelPhoto('${p.id}')">✕</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function openModelLb(idx){ lbList = modelGallery; lbIdx = idx; showLb(); }
+
+/* ── MODEL GALLERY: ADMIN UPLOAD ── */
+function openAddModelPhotos(modelId){
+  mpUploadQueue = [];
+  document.getElementById('mp-model-id').value = modelId;
+  document.getElementById('mp-up-files').value = '';
+  document.getElementById('mp-up-thumbs').innerHTML = '';
+  openM('m-model-photo');
+}
+function mpDragOver(e){ e.preventDefault(); document.getElementById('mp-up-area').classList.add('drag'); }
+function mpDragLeave(){ document.getElementById('mp-up-area').classList.remove('drag'); }
+function mpDrop(e){ e.preventDefault(); mpDragLeave(); mpProcessFiles(e.dataTransfer.files); }
+function mpPick(e){ mpProcessFiles(e.target.files); }
+
+function mpProcessFiles(files){
+  Array.from(files).forEach(async file=>{
+    if(!file.type.startsWith('image/')) return;
+    const compressed = await compressImage(file);
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      mpUploadQueue.push({dataUrl:ev.target.result, name:compressed.name, file:compressed});
+      renderMpThumbs();
+    };
+    reader.readAsDataURL(compressed);
+  });
+}
+function renderMpThumbs(){
+  document.getElementById('mp-up-thumbs').innerHTML = mpUploadQueue.map((q,i)=>`
+    <div class="up-thumb">
+      <img src="${q.dataUrl}" alt="">
+      <button class="up-thumb-del" onclick="removeMpUpload(${i})">✕</button>
+    </div>`).join('');
+}
+function removeMpUpload(i){ mpUploadQueue.splice(i,1); renderMpThumbs(); }
+
+async function saveModelPhotos(){
+  const modelId = document.getElementById('mp-model-id').value;
+  if(!modelId){ showToast('Missing model.'); return; }
+  if(!mpUploadQueue.length){ showToast('Please select at least one image.'); return; }
+
+  showToast(`Uploading ${mpUploadQueue.length} photo${mpUploadQueue.length>1?'s':''}…`);
+  const results = [];
+  for(const q of mpUploadQueue){
+    const uid  = Date.now()+Math.random().toString(36).slice(2);
+    const ext  = (q.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `model-gallery/${modelId}/${uid}.${ext}`;
+    const { error: upErr } = await window._db.storage
+      .from('photos')
+      .upload(path, q.file, { contentType: q.file.type });
+    if(upErr){ showToast('Storage error: '+upErr.message); console.error(upErr); continue; }
+    const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
+    const { data: row, error: dbErr } = await window._db.from('model_photos')
+      .insert({ model_id: modelId, title:'', image_url: urlData.publicUrl })
+      .select().single();
+    if(dbErr){ showToast('DB error: '+dbErr.message); console.error(dbErr); continue; }
+    results.push({ id: row.id, title:'', url: urlData.publicUrl });
+  }
+  if(!results.length){ showToast('No photos saved.'); return; }
+  modelGallery.unshift(...results);
+  closeM('m-model-photo');
+  renderModelGalleryGrid();
+  showToast(`${results.length} photo${results.length>1?'s':''} saved!`);
+}
+
+async function deleteModelPhoto(id){
+  if(!confirm('Delete this photo?')) return;
+  try {
+    const { error } = await window._db.from('model_photos').delete().eq('id', id);
+    if(error) console.warn('Delete model photo error:', error.message);
+  } catch(e){ console.warn(e); }
+  modelGallery = modelGallery.filter(p=>p.id!==id);
+  renderModelGalleryGrid();
+  showToast('Photo removed.');
 }
 
 function renderContact(){
@@ -2741,6 +3038,11 @@ async function init(){
   // all appear right away instead of waiting on a network round-trip.
   renderAll();
 
+  // If this load is a direct hit on /model/<slug> (hard refresh or shared
+  // link), show the model page shell immediately using cached data.
+  const routeSlug = getRouteModelSlug();
+  if(routeSlug) renderModelRoute(routeSlug);
+
   // Fetch admin credentials from Firebase in the background. This only
   // gates the admin login modal, so it must never block the initial render.
   (async () => {
@@ -2775,6 +3077,9 @@ async function init(){
   await loadPhotographersFromFirebase();
   await loadModelsFromFirebase();
   await loadBioFromFirebase();
+  // Now that models are loaded from Firebase, resolve the model-page route
+  // for real (the earlier call above may only have had stale/empty cache).
+  if(routeSlug) renderModelRoute(routeSlug);
   setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>{
     if(el.getBoundingClientRect().top<window.innerHeight) el.classList.add('visible');
   }),100);
