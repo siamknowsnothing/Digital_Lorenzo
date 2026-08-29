@@ -127,6 +127,8 @@ section{padding:96px 52px;}
 @media(max-width:900px){.masonry{columns:2;}}
 @media(max-width:560px){.masonry{columns:1;}}
 .photo-item{break-inside:avoid;margin-bottom:14px;position:relative;overflow:hidden;cursor:none;display:block;}
+.photo-item.dragging,.photographer-card.dragging,.model-card.dragging{opacity:.35;}
+[draggable="true"]{-webkit-user-drag:element;}
 .photo-item img{width:100%;display:block;transition:transform .55s cubic-bezier(.25,.46,.45,.94);}
 .photo-item:hover img{transform:scale(1.04);}
 .photo-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 45%);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;justify-content:flex-end;padding:18px;}
@@ -1349,10 +1351,10 @@ function renderGallery(){
       </div>`;
     }
     return `<div class="cat-panel ${c===currentCat?'active':''}" data-cat="${c}">
-      <div class="masonry">
+      <div class="masonry" ${isAdmin && c===currentCat ? `data-reorder-list="photos" data-reorder-cat="${c}"` : ''}>
         ${list.map((p,i)=>`
-          <div class="photo-item" onclick="openLb('${c}',${i})">
-            <img src="${p.url}" alt="${p.title||''}" loading="lazy" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="this.parentElement.style.display='none'">
+          <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openLb('${c}',${i})">
+            <img src="${p.thumb||p.url}" alt="${p.title||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="this.parentElement.style.display='none'">
             <div class="photo-overlay">
               <div class="photo-title">${p.title||''}</div>
               <div class="photo-cat-lbl">${p.category||''}</div>
@@ -1369,6 +1371,21 @@ function renderGallery(){
   // stats
   document.getElementById('stat-p').textContent=photos.length;
   document.getElementById('stat-c').textContent=cats.length;
+
+  // Wire up drag-to-reorder on the currently visible category's grid
+  // (admin mode only — see initDragReorder/persistOrder below).
+  if(isAdmin){
+    const activeGrid = panels.querySelector('[data-reorder-list="photos"]');
+    if(activeGrid) initDragReorder(activeGrid, async (subsetOrderedIds) => {
+      const fullIds = photos.map(p=>p.id); // current full display order
+      const merged = mergeReorderedSubset(fullIds, subsetOrderedIds);
+      await persistOrder('photos', merged);
+      const idxMap = new Map(merged.map((id,i)=>[id,i]));
+      photos.forEach(p => { if(idxMap.has(p.id)) p.order = idxMap.get(p.id); });
+      photos.sort((a,b)=>(a.order??0)-(b.order??0));
+      showToast('Order saved!');
+    });
+  }
 }
 
 function switchCat(cat){
@@ -1433,7 +1450,7 @@ function renderPhotographers(){
   grid.innerHTML = all.map(pg => {
     const isBuiltin = pg.id === '__builtin__';
     const photoHtml = pg.photo
-      ? `<div class="photographer-photo-frame"><img class="photographer-photo" src="${pg.photo}" alt="${pg.name}" loading="lazy"></div>`
+      ? `<div class="photographer-photo-frame"><img class="photographer-photo" src="${pg.photo}" alt="${pg.name}" loading="lazy" decoding="async"></div>`
       : `<div class="photographer-photo-placeholder">👤</div>`;
 
     const editBtn = isBuiltin
@@ -1457,7 +1474,7 @@ function renderPhotographers(){
            <button class="pg-action-btn del" onclick="deletePhotographer('${pg.id}')">✕ Remove</button>
          </div>`;
 
-    return `<article class="photographer-card">
+    return `<article class="photographer-card" ${!isBuiltin ? `draggable="${isAdmin}" data-reorder-id="${pg.id}"` : ''}>
       <div>
         <div class="photographer-photo-wrap">
           ${photoHtml}
@@ -1473,6 +1490,18 @@ function renderPhotographers(){
   }).join('');
 
   document.getElementById('add-photographer-wrap').style.display = isAdmin ? 'block' : 'none';
+
+  // Drag-to-reorder (admin only). The built-in lead photographer card is
+  // excluded — it isn't a row in the photographers collection, so it has
+  // nowhere to persist an order value and always stays pinned first.
+  if(isAdmin && photographers.length > 1){
+    initDragReorder(grid, async (orderedIds) => {
+      await persistOrder('photographers', orderedIds);
+      const idxMap = new Map(orderedIds.map((id,i)=>[id,i]));
+      photographers.sort((a,b) => (idxMap.get(a.id)??0) - (idxMap.get(b.id)??0));
+      showToast('Order saved!');
+    });
+  }
 }
 
 function openEditBuiltinPhotographer(){
@@ -1794,14 +1823,29 @@ function setModelLetter(letter){
   renderModels();
 }
 function getFilteredModels(){
-  return models
-    .filter(md=>{
-      const name = (md.name||'').trim();
-      if(modelSearchQuery && !name.toLowerCase().includes(modelSearchQuery)) return false;
-      if(modelLetterFilter!=='ALL' && name.charAt(0).toUpperCase()!==modelLetterFilter) return false;
-      return true;
-    })
-    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const filtered = models.filter(md=>{
+    const name = (md.name||'').trim();
+    if(modelSearchQuery && !name.toLowerCase().includes(modelSearchQuery)) return false;
+    if(modelLetterFilter!=='ALL' && name.charAt(0).toUpperCase()!==modelLetterFilter) return false;
+    return true;
+  });
+  // With no search/letter filter active, respect the admin's custom drag
+  // order (models without one yet fall back to alphabetical). Once a
+  // search or A–Z filter is applied, always sort alphabetically — that's
+  // what a name-based filter implies, and drag order isn't meaningful
+  // for a partial, filtered view.
+  const isUnfiltered = !modelSearchQuery && modelLetterFilter==='ALL';
+  if(isUnfiltered){
+    return filtered.sort((a,b)=>{
+      const ao = (typeof a.order==='number') ? a.order : null;
+      const bo = (typeof b.order==='number') ? b.order : null;
+      if(ao!==null && bo!==null) return ao-bo;
+      if(ao!==null) return -1;
+      if(bo!==null) return 1;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+  }
+  return filtered.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
 }
 function renderAzFilter(){
   const bar = document.getElementById('az-filter');
@@ -1844,9 +1888,10 @@ function renderModels(){
     emptyText.textContent = 'No models match your search.';
   } else {
     empty.style.display = 'none';
+    const canReorderModels = !modelSearchQuery && modelLetterFilter==='ALL';
     grid.innerHTML = list.map(md => {
       const photoHtml = md.photo
-        ? `<div class="photographer-photo-frame"><img class="photographer-photo" src="${md.photo}" alt="${md.name}" loading="lazy"></div>`
+        ? `<div class="photographer-photo-frame"><img class="photographer-photo" src="${md.photo}" alt="${md.name}" loading="lazy" decoding="async"></div>`
         : `<div class="photographer-photo-placeholder">👤</div>`;
 
       const editBtn = `<button class="photographer-photo-edit" onclick="openEditModel('${md.id}')" title="Edit">✏</button>`;
@@ -1865,7 +1910,7 @@ function renderModels(){
            <button class="pg-action-btn del" onclick="deleteModel('${md.id}')">✕ Remove</button>
          </div>`;
 
-      return `<article class="photographer-card">
+      return `<article class="photographer-card" ${canReorderModels ? `draggable="${isAdmin}" data-reorder-id="${md.id}"` : ''}>
         <div>
           <div class="photographer-photo-wrap">
             ${photoHtml}
@@ -1882,6 +1927,17 @@ function renderModels(){
         </div>
       </article>`;
     }).join('');
+
+    // Drag-to-reorder — only offered on the unfiltered "ALL" view (see
+    // getFilteredModels), where drag order is what's actually respected.
+    if(isAdmin && canReorderModels && list.length > 1){
+      initDragReorder(grid, async (orderedIds) => {
+        await persistOrder('models', orderedIds);
+        const idxMap = new Map(orderedIds.map((id,i)=>[id,i]));
+        models.forEach(m => { if(idxMap.has(m.id)) m.order = idxMap.get(m.id); });
+        showToast('Order saved!');
+      });
+    }
   }
 
   document.getElementById('add-model-wrap').style.display = isAdmin ? 'block' : 'none';
@@ -2082,6 +2138,68 @@ let mpUploadQueue     = [];    // queue for the model-gallery upload modal
 const _origTitle = document.title;
 const _origDesc  = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
 
+/* ══════════════════════════════════════════════════════
+   DRAG-TO-REORDER — shared by the gallery, photographers,
+   and models admin grids
+   ══════════════════════════════════════════════════════ */
+
+// Makes the draggable="true" children of gridEl reorderable by drag-and-
+// drop, then calls onReorder(newIdOrder) with the resulting id sequence
+// (only for the items actually inside gridEl — a subset if the grid is
+// showing a filtered view, e.g. one gallery category).
+function initDragReorder(gridEl, onReorder){
+  let dragEl = null;
+  gridEl.querySelectorAll('[draggable="true"]').forEach(item => {
+    item.addEventListener('dragstart', () => {
+      dragEl = item;
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      dragEl = null;
+      const newOrder = Array.from(gridEl.querySelectorAll('[data-reorder-id]')).map(el=>el.dataset.reorderId);
+      onReorder(newOrder);
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      if(!dragEl || dragEl===item) return;
+      const rect = item.getBoundingClientRect();
+      const insertAfter = (e.clientY - rect.top) > rect.height/2;
+      if(insertAfter) item.after(dragEl); else item.before(dragEl);
+    });
+  });
+}
+
+// Takes the current full id order and a new relative order for some
+// SUBSET of those ids (e.g. just one filtered category), and returns a
+// new full id order where that subset's members keep the exact same
+// absolute "slots" they occupied before, but in their new relative
+// sequence — so reordering within a filtered view never disturbs items
+// outside that view.
+function mergeReorderedSubset(fullIds, subsetNewOrder){
+  const subsetSet = new Set(subsetNewOrder);
+  const positions = [];
+  fullIds.forEach((id,i) => { if(subsetSet.has(id)) positions.push(i); });
+  const merged = [...fullIds];
+  positions.forEach((pos,i) => { merged[pos] = subsetNewOrder[i]; });
+  return merged;
+}
+
+// Persists a full id order to Firestore as a 0-based "order" field, in a
+// single batched write.
+async function persistOrder(table, orderedIds){
+  try {
+    const batch = _firestore.batch();
+    orderedIds.forEach((id,i) => {
+      batch.update(_firestore.collection(table).doc(String(id)), { order: i });
+    });
+    await batch.commit();
+  } catch(e){
+    console.warn('persistOrder failed:', e);
+    showToast('Could not save new order — try again.');
+  }
+}
+
 function slugify(name){
   return (name||'').toString().trim().toLowerCase()
     .replace(/[^a-z0-9\s-]/g,'')
@@ -2172,7 +2290,7 @@ function renderModelPage(md){
   if(metaDesc) metaDesc.setAttribute('content', descText);
 
   const photoHtml = md.photo
-    ? `<img src="${md.photo}" alt="${md.name}">`
+    ? `<img src="${md.photo}" alt="${md.name}" decoding="async">`
     : `<div class="ph-placeholder">👤</div>`;
 
   const mdVal = (v) => (v && v !== '__blank__') ? v : '';
@@ -2214,9 +2332,18 @@ async function loadModelGalleryFromFirebase(modelId){
       .eq('model_id', modelId);
     if(error){ console.warn('model_photos collection:', error.message); modelGallery = []; }
     else {
-      modelGallery = data
-        .map(p=>({ id:p.id, title:p.title||'', url:p.image_url, created_at:p.created_at||'' }))
-        .sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+      modelGallery = data.map(p=>({
+        id: p.id, title: p.title||'', url: p.image_url,
+        thumb: p.thumb_url || p.image_url,
+        created_at: p.created_at||'',
+        order: (typeof p.order==='number') ? p.order : null,
+      }));
+      modelGallery.sort((a,b)=>{
+        if(a.order!==null && b.order!==null) return a.order-b.order;
+        if(a.order!==null) return -1;
+        if(b.order!==null) return 1;
+        return (b.created_at||'').localeCompare(a.created_at||'');
+      });
     }
   } catch(e){ console.warn('Could not load model gallery:', e); modelGallery = []; }
   renderModelGalleryGrid();
@@ -2229,10 +2356,10 @@ function renderModelGalleryGrid(){
     grid.innerHTML = `<div class="mp-empty"><big>📷</big>${isAdmin?'No photos yet. Click <b>+ Add Photos</b> above.':'No photos yet.'}</div>`;
     return;
   }
-  grid.innerHTML = `<div class="masonry">
+  grid.innerHTML = `<div class="masonry" ${isAdmin ? `data-reorder-list="model_photos"` : ''}>
     ${modelGallery.map((p,i)=>`
-      <div class="photo-item" onclick="openModelLb(${i})">
-        <img src="${p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy">
+      <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openModelLb(${i})">
+        <img src="${p.thumb||p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy" decoding="async">
         <div class="photo-overlay">
           <div class="photo-title">${p.title||''}</div>
         </div>
@@ -2241,6 +2368,16 @@ function renderModelGalleryGrid(){
         </div>
       </div>`).join('')}
   </div>`;
+
+  if(isAdmin && modelGallery.length > 1){
+    initDragReorder(grid.querySelector('[data-reorder-list="model_photos"]'), async (orderedIds) => {
+      await persistOrder('model_photos', orderedIds);
+      const idxMap = new Map(orderedIds.map((id,i)=>[id,i]));
+      modelGallery.forEach(p => { if(idxMap.has(p.id)) p.order = idxMap.get(p.id); });
+      modelGallery.sort((a,b)=>(a.order??0)-(b.order??0));
+      showToast('Order saved!');
+    });
+  }
 }
 
 function openModelLb(idx){ lbList = modelGallery; lbIdx = idx; showLb(); }
@@ -2261,10 +2398,13 @@ function mpPick(e){ mpProcessFiles(e.target.files); }
 function mpProcessFiles(files){
   Array.from(files).forEach(async file=>{
     if(!file.type.startsWith('image/')) return;
-    const compressed = await compressImage(file);
+    const [compressed, thumb] = await Promise.all([
+      compressImage(file),
+      compressImage(file, 500, 0.7)
+    ]);
     const reader = new FileReader();
     reader.onload = ev=>{
-      mpUploadQueue.push({dataUrl:ev.target.result, name:compressed.name, file:compressed});
+      mpUploadQueue.push({dataUrl:ev.target.result, name:compressed.name, file:compressed, thumbFile:thumb});
       renderMpThumbs();
     };
     reader.readAsDataURL(compressed);
@@ -2295,11 +2435,24 @@ async function saveModelPhotos(){
       .upload(path, q.file, { contentType: q.file.type });
     if(upErr){ showToast('Storage error: '+upErr.message); console.error(upErr); continue; }
     const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
+
+    let thumbUrl = urlData.publicUrl;
+    if(q.thumbFile){
+      const thumbPath = `model-gallery/${modelId}/thumb_${uid}.${ext}`;
+      const { error: thumbErr } = await window._db.storage
+        .from('photos')
+        .upload(thumbPath, q.thumbFile, { contentType: q.thumbFile.type });
+      if(!thumbErr){
+        const { data: thumbUrlData } = window._db.storage.from('photos').getPublicUrl(thumbPath);
+        thumbUrl = thumbUrlData.publicUrl;
+      }
+    }
+
     const { data: row, error: dbErr } = await window._db.from('model_photos')
-      .insert({ model_id: modelId, title:'', image_url: urlData.publicUrl })
+      .insert({ model_id: modelId, title:'', image_url: urlData.publicUrl, thumb_url: thumbUrl })
       .select().single();
     if(dbErr){ showToast('DB error: '+dbErr.message); console.error(dbErr); continue; }
-    results.push({ id: row.id, title:'', url: urlData.publicUrl });
+    results.push({ id: row.id, title:'', url: urlData.publicUrl, thumb: thumbUrl });
   }
   if(!results.length){ showToast('No photos saved.'); return; }
   modelGallery.unshift(...results);
@@ -2431,10 +2584,17 @@ function compressImage(file, maxDim=2000, quality=0.82){
 function processFiles(files){
   Array.from(files).forEach(async file=>{
     if(!file.type.startsWith('image/')) return;
-    const compressed = await compressImage(file);
+    // Generate two versions: a full-size one for the lightbox, and a much
+    // smaller one for the masonry grid — this is what actually makes the
+    // gallery feel fast, since visitors load dozens of grid thumbnails but
+    // only ever load one full-size image at a time (in the lightbox).
+    const [compressed, thumb] = await Promise.all([
+      compressImage(file),
+      compressImage(file, 500, 0.7)
+    ]);
     const reader=new FileReader();
     reader.onload=ev=>{
-      uploadQueue.push({dataUrl:ev.target.result,name:compressed.name,file:compressed});
+      uploadQueue.push({dataUrl:ev.target.result,name:compressed.name,file:compressed,thumbFile:thumb});
       renderUpThumbs();
     };
     reader.readAsDataURL(compressed);
@@ -2477,6 +2637,7 @@ async function savePhotos(){
       let newUrl = photos[idx].url;
 
       // If user picked a new image, upload it to Firebase Storage first
+      let newThumbUrl = photos[idx].thumb || newUrl;
       if(uploadQueue.length && uploadQueue[0].file){
         showToast('Uploading image…');
         const file = uploadQueue[0].file;
@@ -2488,16 +2649,29 @@ async function savePhotos(){
         if(upErr){ showToast('Upload failed: '+upErr.message); return; }
         const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
         newUrl = urlData.publicUrl;
+
+        // Also upload the matching thumbnail, if one was generated
+        const thumbFile = uploadQueue[0].thumbFile;
+        if(thumbFile){
+          const thumbPath = `photos/thumb_${eid}.${ext}`;
+          const { error: thumbErr } = await window._db.storage
+            .from('photos')
+            .upload(thumbPath, thumbFile, { upsert: true, contentType: thumbFile.type });
+          if(!thumbErr){
+            const { data: thumbUrlData } = window._db.storage.from('photos').getPublicUrl(thumbPath);
+            newThumbUrl = thumbUrlData.publicUrl;
+          }
+        }
       }
 
-      const updates = { image_url: newUrl };
+      const updates = { image_url: newUrl, thumb_url: newThumbUrl };
       if(cat)   updates.category = cat;
       if(title) updates.title    = title;
 
       const { error } = await window._db.from('photos').update(updates).eq('id', eid);
       if(error){ showToast('Save failed: '+error.message); return; }
 
-      photos[idx] = { ...photos[idx], url: newUrl, category: cat||photos[idx].category, title: title||photos[idx].title };
+      photos[idx] = { ...photos[idx], url: newUrl, thumb: newThumbUrl, category: cat||photos[idx].category, title: title||photos[idx].title };
     }
     closeM('m-photo'); renderAll(); showToast('Photo updated!'); return;
   }
@@ -2514,7 +2688,7 @@ async function savePhotos(){
     const ext  = (q.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `photos/${uid}.${ext}`;
 
-    // Upload file to Firebase Storage
+    // Upload the full-size file to Firebase Storage
     const { error: upErr } = await window._db.storage
       .from('photos')
       .upload(path, q.file, { contentType: q.file.type });
@@ -2523,14 +2697,26 @@ async function savePhotos(){
       console.error('Storage upload error:', upErr);
       continue;
     }
-
-    // Get public URL
     const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
     const publicUrl = urlData.publicUrl;
 
+    // Upload the small thumbnail too — grid views use this, keeping the
+    // gallery fast; the full image is only ever loaded in the lightbox.
+    let thumbUrl = publicUrl;
+    if(q.thumbFile){
+      const thumbPath = `photos/thumb_${uid}.${ext}`;
+      const { error: thumbErr } = await window._db.storage
+        .from('photos')
+        .upload(thumbPath, q.thumbFile, { contentType: q.thumbFile.type });
+      if(!thumbErr){
+        const { data: thumbUrlData } = window._db.storage.from('photos').getPublicUrl(thumbPath);
+        thumbUrl = thumbUrlData.publicUrl;
+      }
+    }
+
     // Insert row into photos table
     const { data: row, error: dbErr } = await window._db.from('photos')
-      .insert({ title: title||'', category: cat, image_url: publicUrl })
+      .insert({ title: title||'', category: cat, image_url: publicUrl, thumb_url: thumbUrl })
       .select().single();
     if(dbErr){
       showToast('DB error: '+dbErr.message);
@@ -2538,7 +2724,7 @@ async function savePhotos(){
       continue;
     }
 
-    results.push({ id: row.id, title: row.title||'', category: row.category||'', url: publicUrl });
+    results.push({ id: row.id, title: row.title||'', category: row.category||'', url: publicUrl, thumb: thumbUrl });
   }
 
   if(!results.length){ showToast('No photos saved.'); return; }
@@ -2904,7 +3090,16 @@ async function loadPhotographersFromFirebase(){
       facebook: r.facebook || '',
       ig:       r.ig       || '',
       website:  r.website  || '',
+      order:    (typeof r.order==='number') ? r.order : null,
     }));
+    // Respect the admin's custom drag order when set; anyone without one
+    // yet falls back to the existing created_at-ascending order.
+    photographers.sort((a,b) => {
+      if(a.order!==null && b.order!==null) return a.order-b.order;
+      if(a.order!==null) return -1;
+      if(b.order!==null) return 1;
+      return 0;
+    });
     renderPhotographers();
   } catch(e){ console.warn('Could not load photographers:', e); }
 }
@@ -2959,6 +3154,7 @@ async function loadModelsFromFirebase(){
       facebook: r.facebook || '',
       ig:       r.ig       || '',
       website:  r.website  || '',
+      order:    (typeof r.order==='number') ? r.order : null,
     }));
     renderModels();
   } catch(e){ console.warn('Could not load models:', e); }
@@ -3042,8 +3238,20 @@ async function loadPhotosFromFirebase() {
     id: p.id,
     title: p.title || '',
     category: p.category || '',
-    url: p.image_url
+    url: p.image_url,
+    thumb: p.thumb_url || p.image_url,
+    order: (typeof p.order === 'number') ? p.order : null
   }));
+
+  // Sort by the admin's custom drag order when set; items without an
+  // order yet (older photos, or a freshly-uploaded batch) fall back to
+  // newest-first, matching the previous default behavior.
+  photos.sort((a,b) => {
+    if(a.order!==null && b.order!==null) return a.order-b.order;
+    if(a.order!==null) return -1;
+    if(b.order!==null) return 1;
+    return 0; // preserve the created_at-desc order the query already gave us
+  });
 
   currentCat = 'all'; // always show All Work tab after load
   renderAll();
