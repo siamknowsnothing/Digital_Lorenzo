@@ -65,7 +65,14 @@ async function fetchModelBySlug(slug) {
   if (!resp.ok) throw new Error('Firestore fetch failed: ' + resp.status);
   const data = await resp.json();
   const docs = (data.documents || []).map(fromFirestoreDoc);
-  return docs.find((m) => slugify(m.name) === slug) || null;
+  return docs.find((m) => getModelSlug(m) === slug) || null;
+}
+
+// Mirrors the same "custom slug wins, else derive from name" rule used in
+// index.html, so a model's OG preview URL matches the URL people actually
+// share/visit.
+function getModelSlug(model) {
+  return model.slug && model.slug.trim() ? slugify(model.slug) : slugify(model.name);
 }
 
 // Converts a Firestore REST API document into a plain {field: value} object.

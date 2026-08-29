@@ -897,7 +897,13 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
     <label>Or Photo URL</label>
     <input type="url" id="md-photo-url" placeholder="https://...">
     <label>Name</label>
-    <input type="text" id="md-name" placeholder="Full name">
+    <input type="text" id="md-name" placeholder="Full name" onkeyup="mdSuggestSlug()">
+    <label>Custom URL Slug (optional)</label>
+    <div style="display:flex;align-items:center;gap:0;border:1px solid rgba(200,169,110,.25);background:var(--surface2);">
+      <span style="padding:0 0 0 14px;color:var(--muted);font-size:.82rem;white-space:nowrap;">/model/</span>
+      <input type="text" id="md-slug" placeholder="auto-generated-from-name" style="border:none;background:none;">
+    </div>
+    <small style="display:block;color:var(--muted2);font-size:.72rem;margin:-8px 0 16px;">Leave blank to auto-generate this from the model's name.</small>
     <label>Role</label>
     <input type="text" id="md-role" placeholder="e.g. Fashion Model, Print, Runway…">
     <label>Short Bio</label>
@@ -1847,7 +1853,7 @@ function renderModels(){
       if(mdVal(md.ig))       links.push(`<span>Instagram: <a href="https://instagram.com/${mdVal(md.ig).replace(/^[@/]+/,'')}" target="_blank">${mdVal(md.ig)}</a></span>`);
       if(mdVal(md.website))  links.push(`<span>Website: <a href="${externalUrl(mdVal(md.website))}" target="_blank">${mdVal(md.website)}</a></span>`);
 
-      const slug = slugify(md.name);
+      const slug = getModelSlug(md);
       const adminActions = `<div class="photographer-card-actions">
            <button class="pg-action-btn" onclick="openEditModel('${md.id}')">✏ Edit</button>
            <button class="pg-action-btn del" onclick="deleteModel('${md.id}')">✕ Remove</button>
@@ -1881,6 +1887,7 @@ function openAddModel(){
   document.getElementById('md-edit-id').value = '';
   document.getElementById('md-modal-title').textContent = 'Add Model';
   document.getElementById('md-name').value = '';
+  document.getElementById('md-slug').value = '';
   document.getElementById('md-role').value = '';
   document.getElementById('md-bio').value = '';
   document.getElementById('md-phone').value = '';
@@ -1913,6 +1920,7 @@ function openEditModel(id){
   document.getElementById('md-edit-id').value = id;
   document.getElementById('md-modal-title').textContent = 'Edit Model';
   document.getElementById('md-name').value = md.name||'';
+  document.getElementById('md-slug').value = md.slug||'';
   document.getElementById('md-role').value = md.role||'';
   document.getElementById('md-bio').value = md.bio||'';
   document.getElementById('md-photo-url').value = (!md.photo||md.photo.startsWith('data:'))?'':md.photo;
@@ -1970,6 +1978,7 @@ async function saveModel(){
   const data = {
     id:       id || null,
     name:     document.getElementById('md-name').value.trim(),
+    slug:     (() => { const raw = document.getElementById('md-slug').value.trim(); return raw ? slugify(raw) : ''; })(),
     role:     document.getElementById('md-role').value.trim() || 'Model',
     bio:      document.getElementById('md-bio').value.trim(),
     phone:    mdFieldVal('phone'),
@@ -1980,6 +1989,17 @@ async function saveModel(){
     photo:    '',
   };
   if(!data.name){ showToast('Please enter a name.'); return; }
+
+  // If a custom slug was given, make sure no OTHER model already uses it
+  // (comparing against each other model's effective slug — custom or
+  // auto-generated — so a manual slug can't collide with an auto one either).
+  if(data.slug){
+    const clash = models.find(m => m.id!==id && getModelSlug(m)===data.slug);
+    if(clash){
+      showToast(`That URL is already used by ${clash.name}. Pick a different slug.`);
+      return;
+    }
+  }
 
   showToast('Saving…');
 
@@ -2037,12 +2057,13 @@ async function deleteModel(id){
   try {
     await deleteModelFromFirebase(id);
   } catch(e){ console.warn(e); }
+  const wasViewingThisModel = currentModelSlug && currentModelObj && currentModelObj.id === id;
   models = models.filter(p=>p.id!==id);
   await S.set('models', models);
   renderModels();
   showToast('Model removed.');
   // If the deleted model's page is currently open, go home
-  if(currentModelSlug && slugify(models.find(m=>m.id===id)?.name||'')===currentModelSlug) exitModelPage();
+  if(wasViewingThisModel) exitModelPage();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2061,6 +2082,21 @@ function slugify(name){
     .replace(/\s+/g,'-')
     .replace(/-+/g,'-')
     .replace(/^-|-$/g,'') || 'model';
+}
+
+// Returns the URL slug to actually use for a given model: their custom
+// slug if they set one, otherwise one auto-generated from their name.
+function getModelSlug(md){
+  return (md.slug && md.slug.trim()) ? slugify(md.slug) : slugify(md.name);
+}
+
+// Live-updates the "Custom URL Slug" field's placeholder as the admin
+// types a name, so they can see what the auto-generated slug would be
+// without it overwriting anything they've deliberately typed themselves.
+function mdSuggestSlug(){
+  const nameVal = document.getElementById('md-name').value;
+  const slugInput = document.getElementById('md-slug');
+  if(slugInput) slugInput.placeholder = nameVal ? slugify(nameVal) : 'auto-generated-from-name';
 }
 
 function getRouteModelSlug(){
@@ -2109,7 +2145,7 @@ window.addEventListener('popstate', () => {
 async function renderModelRoute(slug){
   currentModelSlug = slug;
   document.body.classList.add('viewing-model');
-  const md = models.find(m => slugify(m.name) === slug);
+  const md = models.find(m => getModelSlug(m) === slug);
   if(!md){
     // models may not have finished loading yet on a hard refresh —
     // render a soft "loading" state; init() re-calls this once loaded.
@@ -2894,6 +2930,7 @@ async function loadModelsFromFirebase(){
     models = data.map(r=>({
       id:       r.id,
       name:     r.name     || '',
+      slug:     r.slug     || '',
       role:     r.role     || 'Model',
       bio:      r.bio      || '',
       photo:    r.photo_url || localPhotoCache[String(r.id)] || '',
@@ -2910,6 +2947,7 @@ async function loadModelsFromFirebase(){
 async function saveModelToFirebase(data){
   const row = {
     name:      data.name,
+    slug:      data.slug || '',
     role:      data.role,
     bio:       data.bio,
     photo_url: data.photo,
