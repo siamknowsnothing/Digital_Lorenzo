@@ -695,15 +695,15 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
     <button class="mcl" onclick="closeM('m-login')">✕</button>
     <h2>Admin Login</h2>
     <p class="sub">Sign in to manage the portfolio.</p>
-    <label>Username / Email</label>
-    <input type="text" id="l-user" placeholder="Enter username or email"
+    <label>Email</label>
+    <input type="email" id="l-user" placeholder="Enter your admin email"
       autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false"
       onkeydown="if(event.key==='Enter')doLogin()">
     <label>Password</label>
     <input type="password" id="l-pass" placeholder="Enter password"
       autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false"
       onkeydown="if(event.key==='Enter')doLogin()">
-    <div id="lerr" class="err-msg" style="display:none">Incorrect username or password.</div>
+    <div id="lerr" class="err-msg" style="display:none">Incorrect email or password.</div>
     <button class="btn-primary" onclick="doLogin()">Sign In</button>
 
   </div>
@@ -963,10 +963,10 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
     <button class="mcl" onclick="closeM('m-pass')">✕</button>
     <h2>Account Settings</h2>
     <p class="sub">Update your admin login credentials.</p>
-    <label>Current Username / Email</label>
+    <label>Current Email</label>
     <input type="text" id="cp-user-show" disabled style="opacity:.5;">
-    <label>New Username / Email <span style="color:var(--muted);font-size:.65rem;letter-spacing:0;text-transform:none;">(leave blank to keep current)</span></label>
-    <input type="text" id="cp-new-user" placeholder="New username or email"
+    <label>New Email <span style="color:var(--muted);font-size:.65rem;letter-spacing:0;text-transform:none;">(leave blank to keep current)</span></label>
+    <input type="email" id="cp-new-user" placeholder="New admin email"
       autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false">
     <label style="margin-top:24px;">Current Password</label>
     <input type="password" id="cp-old" placeholder="Enter current password"
@@ -989,6 +989,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCwV3oibwW6OjYTdfOq9jyy3_S86lU-Sxc",
@@ -1002,6 +1003,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const _firestore = firebase.firestore();
 const _fbStorage = firebase.storage();
+const _auth = firebase.auth();
 
 /*
   COMPATIBILITY SHIM
@@ -1205,8 +1207,6 @@ const defaultBio = {
 let photos   = [];
 let bio      = {...defaultBio};
 let settings = {logo:'Studio Lorenzo',heroTitle:'Through Every|Lens & Light',heroSub:'Photography that captures the soul of every moment — from sweeping landscapes to intimate portraits.',cSub:'Available for commissions, collaborations, and exhibitions.'};
-let adminPass= 'admin123';
-let adminUser= 'admin';
 let customServices = []; // [{name, icon, desc}] — user-defined extras beyond defaults
 let photographers = []; // [{id, name, role, bio, photo, phone, email, facebook, ig, website}]
 let pgUploadData = null;
@@ -2363,38 +2363,34 @@ document.addEventListener('keydown',e=>{
 
 /* ── ADMIN ── */
 function handleAdminClick(){ isAdmin?doLogout():openM('m-login'); }
-function doLogin(){
-  const u = document.getElementById('l-user').value.trim().toLowerCase();
-  const p = document.getElementById('l-pass').value.trim();
+async function doLogin(){
+  const email = document.getElementById('l-user').value.trim();
+  const pass  = document.getElementById('l-pass').value;
   const err = document.getElementById('lerr');
-  const storedUser = (adminUser || 'admin').trim().toLowerCase();
-  const storedPass = (adminPass || 'admin123').trim();
-  if(u === storedUser && p === storedPass){
-    isAdmin=true; document.body.classList.add('admin');
-    sessionStorage.setItem('slz_admin_session','1');
+  if(!email || !pass){
+    err.textContent = 'Please enter both email and password.';
+    err.style.display='block';
+    return;
+  }
+  try {
+    await _auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged (registered in init()) picks up the signed-in
+    // user and flips isAdmin/renders the UI — nothing else to do here.
     closeM('m-login');
     document.getElementById('l-user').value='';
     document.getElementById('l-pass').value='';
     err.style.display='none';
-    renderAll(); syncMobAdminBtn(); showToast('Welcome back, Admin!');
-  } else {
-    err.textContent = 'Incorrect username or password. (Default: admin / admin123)';
+    showToast('Welcome back, Admin!');
+  } catch(e){
+    console.warn('Sign-in failed:', e.code, e.message);
+    err.textContent = 'Incorrect email or password.';
     err.style.display='block';
   }
 }
-function doLogout(){
-  isAdmin=false; document.body.classList.remove('admin');
-  sessionStorage.removeItem('slz_admin_session');
-  renderAll(); syncMobAdminBtn(); showToast('Logged out.');
-}
-function resetAndReload(){
-  // Wipe cached credentials from localStorage then hard-reload
-  // so Firebase is fetched fresh with no stale local override
-  try {
-    localStorage.removeItem('slz_adminPass');
-    localStorage.removeItem('slz_adminUser');
-  } catch(e){}
-  window.location.reload(true);
+async function doLogout(){
+  try { await _auth.signOut(); } catch(e){ console.warn(e); }
+  // onAuthStateChanged handles flipping isAdmin/UI state.
+  showToast('Logged out.');
 }
 
 /* ── MULTI-UPLOAD ── */
@@ -2764,7 +2760,7 @@ function saveSettings(){
 
 /* ── PASSWORD ── */
 function openPassModal(){
-  document.getElementById('cp-user-show').value = adminUser;
+  document.getElementById('cp-user-show').value = _auth.currentUser ? (_auth.currentUser.email||'') : '';
   document.getElementById('cp-new-user').value  = '';
   document.getElementById('cp-old').value       = '';
   document.getElementById('cp-new').value       = '';
@@ -2773,14 +2769,19 @@ function openPassModal(){
   openM('m-pass');
 }
 async function changePass(){
-  const o    = document.getElementById('cp-old').value.trim();
-  const newU = document.getElementById('cp-new-user').value.trim();
-  const n    = document.getElementById('cp-new').value.trim();
-  const c    = document.getElementById('cp-cf').value.trim();
-  const msg  = document.getElementById('cp-msg');
+  const oldPass = document.getElementById('cp-old').value;
+  const newU    = document.getElementById('cp-new-user').value.trim();
+  const n       = document.getElementById('cp-new').value;
+  const c       = document.getElementById('cp-cf').value;
+  const msg     = document.getElementById('cp-msg');
 
-  if(o !== adminPass.trim()){
-    msg.textContent='Current password is incorrect.';
+  const user = _auth.currentUser;
+  if(!user){
+    msg.textContent='You are not signed in.';
+    msg.className='err-msg'; msg.style.display='block'; return;
+  }
+  if(!oldPass){
+    msg.textContent='Please enter your current password to confirm this change.';
     msg.className='err-msg'; msg.style.display='block'; return;
   }
   if(n && n.length < 6){
@@ -2791,25 +2792,38 @@ async function changePass(){
     msg.textContent='New passwords do not match.';
     msg.className='err-msg'; msg.style.display='block'; return;
   }
-
-  if(newU){ adminUser = newU; await S.set('adminUser', adminUser); }
-  if(n)   { adminPass = n;    await S.set('adminPass', adminPass); }
-
-  // Sync to Firebase so ALL devices get the new credentials immediately
-  try {
-    const { error } = await window._db.from('site_config').upsert([
-      { key: 'adminUser', value: JSON.stringify(adminUser) },
-      { key: 'adminPass', value: JSON.stringify(adminPass) }
-    ], { onConflict: 'key' });
-    if(error) throw error;
-    msg.textContent = 'Credentials updated & synced to all devices!';
-  } catch(e){
-    console.warn('Firebase sync failed:', e);
-    msg.textContent = 'Credentials saved locally (sync failed — check connection).';
+  if(!newU && !n){
+    msg.textContent='Nothing to update — enter a new email and/or new password.';
+    msg.className='err-msg'; msg.style.display='block'; return;
   }
-  msg.className = 'ok-msg'; msg.style.display = 'block';
-  document.getElementById('cp-user-show').value = adminUser;
-  setTimeout(()=>{ closeM('m-pass'); msg.style.display='none'; }, 2000);
+
+  try {
+    // Firebase requires a "recent" login for sensitive changes like
+    // updating email/password — re-authenticate with the current
+    // password first so this works even on an old session.
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, oldPass);
+    await user.reauthenticateWithCredential(cred);
+
+    if(newU && newU !== user.email) await user.updateEmail(newU);
+    if(n) await user.updatePassword(n);
+
+    msg.textContent = 'Credentials updated!';
+    msg.className = 'ok-msg'; msg.style.display = 'block';
+    document.getElementById('cp-user-show').value = user.email || '';
+    setTimeout(()=>{ closeM('m-pass'); msg.style.display='none'; }, 2000);
+  } catch(e){
+    console.warn('Credential update failed:', e.code, e.message);
+    if(e.code === 'auth/wrong-password'){
+      msg.textContent = 'Current password is incorrect.';
+    } else if(e.code === 'auth/requires-recent-login'){
+      msg.textContent = 'Please log out and back in, then try again.';
+    } else if(e.code === 'auth/email-already-in-use'){
+      msg.textContent = 'That email is already in use by another account.';
+    } else {
+      msg.textContent = 'Update failed: ' + e.message;
+    }
+    msg.className='err-msg'; msg.style.display='block';
+  }
 }
 
 
@@ -3072,11 +3086,9 @@ async function init(){
   photographers = await S.get('photographers', []);
   models        = await S.get('models', []);
 
-  // Restore admin session if it was active before reload
-  if(sessionStorage.getItem('slz_admin_session') === '1'){
-    isAdmin = true;
-    document.body.classList.add('admin');
-  }
+  // Admin session is now handled entirely by Firebase Auth's own
+  // persistence (see onAuthStateChanged below) — no manual
+  // sessionStorage restore needed here anymore.
 
   // Paint the page immediately with local/cached data — nav, hero, sections
   // all appear right away instead of waiting on a network round-trip.
@@ -3087,35 +3099,19 @@ async function init(){
   const routeSlug = getRouteModelSlug();
   if(routeSlug) renderModelRoute(routeSlug);
 
-  // Fetch admin credentials from Firebase in the background. This only
-  // gates the admin login modal, so it must never block the initial render.
-  (async () => {
-    try {
-      const { data: rows } = await window._db.from('site_config')
-        .select('key,value').in('key', ['adminPass','adminUser']);
-      if(rows && rows.length){
-        rows.forEach(r => {
-          try {
-            const v = JSON.parse(r.value);
-            if(r.key === 'adminPass' && v) adminPass = v;
-            if(r.key === 'adminUser' && v) adminUser = v;
-          } catch(e){}
-        });
-      } else {
-        // Firebase has no credentials (e.g. after SQL DELETE reset) — use defaults
-        adminPass = 'admin123';
-        adminUser = 'admin';
-      }
-    } catch(e){
-      // Firebase unreachable — fall back to localStorage then hardcoded default
-      adminPass = await S.get('adminPass', 'admin123');
-      adminUser = await S.get('adminUser', 'admin');
-      console.warn('Could not load credentials from Firebase, using local cache:', e);
+  // Firebase Auth is the single source of truth for admin login state.
+  // This fires immediately on page load (restoring a previous session
+  // from Firebase's own persisted auth token) and again on every
+  // sign-in/sign-out, so all admin-gated UI stays in sync automatically.
+  _auth.onAuthStateChanged(user => {
+    isAdmin = !!user;
+    document.body.classList.toggle('admin', isAdmin);
+    if(user){
+      document.getElementById('cp-user-show').value = user.email || '';
     }
-    // Always keep localStorage in sync with whatever we resolved
-    S.set('adminPass', adminPass);
-    S.set('adminUser', adminUser);
-  })();
+    renderAll();
+    syncMobAdminBtn();
+  });
 
   await loadPhotosFromFirebase();
   await loadPhotographersFromFirebase();
