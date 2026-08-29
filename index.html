@@ -1077,11 +1077,17 @@ function _makeQueryBuilder(table){
         }
       };
     },
-    async upsert(row, opts){
+    async upsert(rows, opts){
       try{
-        const r = Array.isArray(row) ? row[0] : row;
-        const key = (opts && opts.onConflict) ? r[opts.onConflict] : r.id;
-        await _firestore.collection(table).doc(String(key)).set(r, {merge:true});
+        // Handle both a single row object and an array of rows — each one
+        // is upserted individually, keyed by whichever field opts.onConflict
+        // names (falling back to .id for callers that don't specify one).
+        const list = Array.isArray(rows) ? rows : [rows];
+        const conflictField = (opts && opts.onConflict) || 'id';
+        for(const r of list){
+          const key = r[conflictField];
+          await _firestore.collection(table).doc(String(key)).set(r, {merge:true});
+        }
         return {error:null};
       }catch(e){ return {error:{message:e.message}}; }
     }
