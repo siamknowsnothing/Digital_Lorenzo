@@ -2410,13 +2410,13 @@ function mpPick(e){ mpProcessFiles(e.target.files); }
 function mpProcessFiles(files){
   Array.from(files).forEach(async file=>{
     if(!file.type.startsWith('image/')) return;
-    const [compressed, thumb] = await Promise.all([
-      compressImage(file),
-      compressImage(file, 900, 0.8)
-    ]);
+    // Grid previews now use the same image as the lightbox — no separate
+    // downscaled thumbnail — so the preview always matches the resolution
+    // of the photo actually uploaded.
+    const compressed = await compressImage(file);
     const reader = new FileReader();
     reader.onload = ev=>{
-      mpUploadQueue.push({dataUrl:ev.target.result, name:compressed.name, file:compressed, thumbFile:thumb});
+      mpUploadQueue.push({dataUrl:ev.target.result, name:compressed.name, file:compressed});
       renderMpThumbs();
     };
     reader.readAsDataURL(compressed);
@@ -2448,23 +2448,13 @@ async function saveModelPhotos(){
     if(upErr){ showToast('Storage error: '+upErr.message); console.error(upErr); continue; }
     const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
 
-    let thumbUrl = urlData.publicUrl;
-    if(q.thumbFile){
-      const thumbPath = `model-gallery/${modelId}/thumb_${uid}.${ext}`;
-      const { error: thumbErr } = await window._db.storage
-        .from('photos')
-        .upload(thumbPath, q.thumbFile, { contentType: q.thumbFile.type });
-      if(!thumbErr){
-        const { data: thumbUrlData } = window._db.storage.from('photos').getPublicUrl(thumbPath);
-        thumbUrl = thumbUrlData.publicUrl;
-      }
-    }
-
+    // Grid preview and lightbox share the same image — no separate,
+    // lower-resolution thumbnail — so thumb_url and image_url match.
     const { data: row, error: dbErr } = await window._db.from('model_photos')
-      .insert({ model_id: modelId, title:'', image_url: urlData.publicUrl, thumb_url: thumbUrl })
+      .insert({ model_id: modelId, title:'', image_url: urlData.publicUrl, thumb_url: urlData.publicUrl })
       .select().single();
     if(dbErr){ showToast('DB error: '+dbErr.message); console.error(dbErr); continue; }
-    results.push({ id: row.id, title:'', url: urlData.publicUrl, thumb: thumbUrl });
+    results.push({ id: row.id, title:'', url: urlData.publicUrl, thumb: urlData.publicUrl });
   }
   if(!results.length){ showToast('No photos saved.'); return; }
   modelGallery.unshift(...results);
@@ -2596,17 +2586,13 @@ function compressImage(file, maxDim=2000, quality=0.82){
 function processFiles(files){
   Array.from(files).forEach(async file=>{
     if(!file.type.startsWith('image/')) return;
-    // Generate two versions: a full-size one for the lightbox, and a much
-    // smaller one for the masonry grid — this is what actually makes the
-    // gallery feel fast, since visitors load dozens of grid thumbnails but
-    // only ever load one full-size image at a time (in the lightbox).
-    const [compressed, thumb] = await Promise.all([
-      compressImage(file),
-      compressImage(file, 900, 0.8)
-    ]);
+    // Grid previews now use the same image as the lightbox — no separate
+    // downscaled thumbnail — so the preview always matches the resolution
+    // of the photo actually uploaded.
+    const compressed = await compressImage(file);
     const reader=new FileReader();
     reader.onload=ev=>{
-      uploadQueue.push({dataUrl:ev.target.result,name:compressed.name,file:compressed,thumbFile:thumb});
+      uploadQueue.push({dataUrl:ev.target.result,name:compressed.name,file:compressed});
       renderUpThumbs();
     };
     reader.readAsDataURL(compressed);
@@ -2648,8 +2634,9 @@ async function savePhotos(){
     if(idx>-1){
       let newUrl = photos[idx].url;
 
-      // If user picked a new image, upload it to Firebase Storage first
-      let newThumbUrl = photos[idx].thumb || newUrl;
+      // If user picked a new image, upload it to Firebase Storage first.
+      // The grid preview and lightbox now share the same image, so there's
+      // just one URL to update — no separate thumbnail to keep in sync.
       if(uploadQueue.length && uploadQueue[0].file){
         showToast('Uploading image…');
         const file = uploadQueue[0].file;
@@ -2661,29 +2648,16 @@ async function savePhotos(){
         if(upErr){ showToast('Upload failed: '+upErr.message); return; }
         const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
         newUrl = urlData.publicUrl;
-
-        // Also upload the matching thumbnail, if one was generated
-        const thumbFile = uploadQueue[0].thumbFile;
-        if(thumbFile){
-          const thumbPath = `photos/thumb_${eid}.${ext}`;
-          const { error: thumbErr } = await window._db.storage
-            .from('photos')
-            .upload(thumbPath, thumbFile, { upsert: true, contentType: thumbFile.type });
-          if(!thumbErr){
-            const { data: thumbUrlData } = window._db.storage.from('photos').getPublicUrl(thumbPath);
-            newThumbUrl = thumbUrlData.publicUrl;
-          }
-        }
       }
 
-      const updates = { image_url: newUrl, thumb_url: newThumbUrl };
+      const updates = { image_url: newUrl, thumb_url: newUrl };
       if(cat)   updates.category = cat;
       if(title) updates.title    = title;
 
       const { error } = await window._db.from('photos').update(updates).eq('id', eid);
       if(error){ showToast('Save failed: '+error.message); return; }
 
-      photos[idx] = { ...photos[idx], url: newUrl, thumb: newThumbUrl, category: cat||photos[idx].category, title: title||photos[idx].title };
+      photos[idx] = { ...photos[idx], url: newUrl, thumb: newUrl, category: cat||photos[idx].category, title: title||photos[idx].title };
     }
     closeM('m-photo'); renderAll(); showToast('Photo updated!'); return;
   }
@@ -2712,23 +2686,13 @@ async function savePhotos(){
     const { data: urlData } = window._db.storage.from('photos').getPublicUrl(path);
     const publicUrl = urlData.publicUrl;
 
-    // Upload the small thumbnail too — grid views use this, keeping the
-    // gallery fast; the full image is only ever loaded in the lightbox.
-    let thumbUrl = publicUrl;
-    if(q.thumbFile){
-      const thumbPath = `photos/thumb_${uid}.${ext}`;
-      const { error: thumbErr } = await window._db.storage
-        .from('photos')
-        .upload(thumbPath, q.thumbFile, { contentType: q.thumbFile.type });
-      if(!thumbErr){
-        const { data: thumbUrlData } = window._db.storage.from('photos').getPublicUrl(thumbPath);
-        thumbUrl = thumbUrlData.publicUrl;
-      }
-    }
+    // Grid preview and lightbox share the same image — no separate,
+    // lower-resolution thumbnail — so the preview always matches the
+    // resolution of the photo actually uploaded.
 
     // Insert row into photos table
     const { data: row, error: dbErr } = await window._db.from('photos')
-      .insert({ title: title||'', category: cat, image_url: publicUrl, thumb_url: thumbUrl })
+      .insert({ title: title||'', category: cat, image_url: publicUrl, thumb_url: publicUrl })
       .select().single();
     if(dbErr){
       showToast('DB error: '+dbErr.message);
@@ -2736,7 +2700,7 @@ async function savePhotos(){
       continue;
     }
 
-    results.push({ id: row.id, title: row.title||'', category: row.category||'', url: publicUrl, thumb: thumbUrl });
+    results.push({ id: row.id, title: row.title||'', category: row.category||'', url: publicUrl, thumb: publicUrl });
   }
 
   if(!results.length){ showToast('No photos saved.'); return; }
