@@ -191,7 +191,7 @@ body.admin .photo-actions{display:flex;}
 body.admin .photographer-photo-edit{display:flex;}
 .photographer-role{font-size:.63rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;opacity:.85;}
 .photographer-name{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--text);line-height:1.2;margin-bottom:12px;}
-.photographer-bio{font-size:.84rem;color:var(--muted);line-height:1.8;}
+.photographer-bio{font-size:.84rem;color:var(--muted);line-height:1.8;white-space:pre-line;}
 .photographer-contact{margin-top:22px;padding-top:18px;border-top:1px solid var(--border);display:grid;gap:8px;font-size:.78rem;color:rgba(236,232,225,.68);line-height:1.55;}
 .photographer-contact a{color:var(--gold);text-decoration:none;cursor:none;}
 .photographer-contact a:hover{text-decoration:underline;}
@@ -231,7 +231,7 @@ body.viewing-model #contact{display:none;}
 .mp-photo-frame .ph-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--muted2);}
 .mp-role{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
 .mp-name{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,4.5vw,3.4rem);line-height:1.1;margin-bottom:20px;}
-.mp-bio{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:rgba(236,232,225,.75);line-height:1.85;max-width:560px;margin-bottom:28px;}
+.mp-bio{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:rgba(236,232,225,.75);line-height:1.85;max-width:560px;margin-bottom:28px;white-space:pre-line;}
 .mp-contact{display:grid;gap:9px;font-size:.82rem;color:rgba(236,232,225,.7);}
 .mp-contact a{color:var(--gold);text-decoration:none;cursor:none;}
 .mp-contact a:hover{text-decoration:underline;}
@@ -1318,6 +1318,18 @@ function renderHeader(){
 }
 
 function scrollToSection(sel){
+  // If we're on a model's dedicated page (/model/<slug>), the normal
+  // sections are hidden via CSS — scrollIntoView on a hidden element does
+  // nothing. Exit the model view first, then scroll once the sections are
+  // visible again (double rAF ensures the browser has reflowed after the
+  // CSS class change before we try to measure/scroll to the target).
+  if(document.body.classList.contains('viewing-model')){
+    exitModelPage();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
+    }));
+    return;
+  }
   const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
 }
 
@@ -3352,6 +3364,13 @@ function closeMobileNav(){
 }
 function mobileNavGo(sel){
   closeMobileNav();
+  if(document.body.classList.contains('viewing-model')){
+    exitModelPage();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
+    }));
+    return;
+  }
   setTimeout(()=>{ const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'}); }, 120);
 }
 function mobileAdminClick(){
