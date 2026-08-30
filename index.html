@@ -2359,7 +2359,7 @@ function renderModelGalleryGrid(){
   grid.innerHTML = `<div class="masonry" ${isAdmin ? `data-reorder-list="model_photos"` : ''}>
     ${modelGallery.map((p,i)=>`
       <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openModelLb(${i})">
-        <img src="${p.thumb||p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy" decoding="async" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
+        <img src="${p.thumb||p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
         <div class="photo-overlay">
           <div class="photo-title">${p.title||''}</div>
         </div>
