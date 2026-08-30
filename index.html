@@ -1354,7 +1354,7 @@ function renderGallery(){
       <div class="masonry" ${isAdmin && c===currentCat ? `data-reorder-list="photos" data-reorder-cat="${c}"` : ''}>
         ${list.map((p,i)=>`
           <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openLb('${c}',${i})">
-            <img src="${p.thumb||p.url}" alt="${p.title||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="this.parentElement.style.display='none'">
+            <img src="${p.thumb||p.url}" alt="${p.title||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
             <div class="photo-overlay">
               <div class="photo-title">${p.title||''}</div>
               <div class="photo-cat-lbl">${p.category||''}</div>
@@ -2359,7 +2359,7 @@ function renderModelGalleryGrid(){
   grid.innerHTML = `<div class="masonry" ${isAdmin ? `data-reorder-list="model_photos"` : ''}>
     ${modelGallery.map((p,i)=>`
       <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openModelLb(${i})">
-        <img src="${p.thumb||p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy" decoding="async">
+        <img src="${p.thumb||p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy" decoding="async" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
         <div class="photo-overlay">
           <div class="photo-title">${p.title||''}</div>
         </div>
