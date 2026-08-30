@@ -2412,7 +2412,7 @@ function mpProcessFiles(files){
     if(!file.type.startsWith('image/')) return;
     const [compressed, thumb] = await Promise.all([
       compressImage(file),
-      compressImage(file, 500, 0.7)
+      compressImage(file, 900, 0.8)
     ]);
     const reader = new FileReader();
     reader.onload = ev=>{
@@ -2602,7 +2602,7 @@ function processFiles(files){
     // only ever load one full-size image at a time (in the lightbox).
     const [compressed, thumb] = await Promise.all([
       compressImage(file),
-      compressImage(file, 500, 0.7)
+      compressImage(file, 900, 0.8)
     ]);
     const reader=new FileReader();
     reader.onload=ev=>{
