@@ -270,6 +270,9 @@ body.admin .mp-photo-actions{display:flex;}
 
 /* ── FOOTER ── */
 footer{background:var(--surface);border-top:1px solid var(--border);padding:28px 52px;display:flex;justify-content:space-between;align-items:center;font-size:.68rem;color:var(--muted);letter-spacing:.07em;flex-wrap:wrap;gap:12px;}
+.footer-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.footer-right>span+span{position:relative;padding-left:12px;}
+.footer-right>span+span::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:10px;background:var(--border);}
 
 /* ── LIGHTBOX ── */
 #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:1000;align-items:center;justify-content:center;}
@@ -667,7 +670,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 
 <footer>
   <span id="footer-copy">© 2025 Photographer</span>
-  <span>All rights reserved</span>
+  <span class="footer-right"><span>All rights reserved</span><span style="opacity:.6;">Developed by Tariqul Siam</span></span>
 </footer>
 
 <!-- ── LIGHTBOX ── -->
