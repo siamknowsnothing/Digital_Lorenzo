@@ -142,6 +142,8 @@ body.admin .photo-actions{display:flex;}
 .pa-btn:hover{transform:scale(1.1);}
 .pa-edit{background:rgba(200,169,110,.92);color:#000;}
 .pa-del{background:rgba(176,48,48,.92);color:#fff;}
+.pa-pin{background:rgba(60,60,60,.92);color:#fff;}
+.pa-pin.is-pinned{background:rgba(200,169,110,.92);color:#000;}
 
 /* ── ABOUT ── */
 #about{background:var(--bg);}
@@ -216,6 +218,7 @@ body.admin .photographer-photo-edit{display:flex;}
 #model-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
 body.viewing-model #model-page{display:block;}
 body.viewing-model #hero,
+body.viewing-model #featured,
 body.viewing-model #gallery,
 body.viewing-model #services,
 body.viewing-model #about,
@@ -245,6 +248,26 @@ body.admin .mp-photo-actions{display:flex;}
 .mp-notfound{text-align:center;padding:100px 0;}
 .mp-notfound h2{font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:14px;}
 .mp-notfound p{color:var(--muted);margin-bottom:28px;}
+
+/* ── GALLERY CATEGORY LANDING PAGE ── */
+#gallery-cat-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
+body.viewing-gallery-cat #gallery-cat-page{display:block;}
+body.viewing-gallery-cat #hero,
+body.viewing-gallery-cat #featured,
+body.viewing-gallery-cat #gallery,
+body.viewing-gallery-cat #services,
+body.viewing-gallery-cat #about,
+body.viewing-gallery-cat #photographers,
+body.viewing-gallery-cat #models,
+body.viewing-gallery-cat #model-page,
+body.viewing-gallery-cat #contact{display:none;}
+body.viewing-model #gallery-cat-page{display:none;}
+.gcp-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:44px;}
+.gcp-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,4.5vw,3rem);}
+.gcp-count{color:var(--muted);font-size:.8rem;letter-spacing:.06em;margin-top:6px;}
+.share-link-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid rgba(200,169,110,.4);color:var(--gold);font-family:'Lato',sans-serif;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:10px 18px;cursor:none;transition:background .2s,color .2s;}
+.share-link-btn:hover{background:var(--gold);color:#080808;}
+.cat-panel-head{display:flex;justify-content:flex-end;margin-bottom:14px;}
 
 /* ── SERVICES ── */
 #services{background:var(--surface);}
@@ -581,6 +604,13 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   </div>
 </section>
 
+<!-- ── FEATURED (pinned by admin) ── -->
+<section id="featured" style="display:none;">
+  <div class="sec-label">Curated</div>
+  <h2 class="sec-title">Featured <i>Selections</i></h2>
+  <div id="featured-grid" class="masonry"></div>
+</section>
+
 <!-- ── GALLERY ── -->
 <section id="gallery">
   <div class="sec-label">Portfolio</div>
@@ -656,6 +686,11 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 <!-- ── MODEL LANDING PAGE ── -->
 <section id="model-page">
   <div id="model-page-inner"></div>
+</section>
+
+<!-- ── GALLERY CATEGORY LANDING PAGE ── -->
+<section id="gallery-cat-page">
+  <div id="gallery-cat-page-inner"></div>
 </section>
 
 <!-- ── CONTACT ── -->
@@ -1302,6 +1337,7 @@ function getPhotosForCat(cat){ return cat==='all'?photos:photos.filter(p=>p.cate
 function renderAll(){
   renderHeader();
   renderHero();
+  renderFeatured();
   renderGallery();
   renderServices();
   renderAbout();
@@ -1321,13 +1357,14 @@ function renderHeader(){
 }
 
 function scrollToSection(sel){
-  // If we're on a model's dedicated page (/model/<slug>), the normal
+  // If we're on a model's or gallery category's dedicated page, the normal
   // sections are hidden via CSS — scrollIntoView on a hidden element does
-  // nothing. Exit the model view first, then scroll once the sections are
+  // nothing. Exit that view first, then scroll once the sections are
   // visible again (double rAF ensures the browser has reflowed after the
   // CSS class change before we try to measure/scroll to the target).
-  if(document.body.classList.contains('viewing-model')){
+  if(document.body.classList.contains('viewing-model') || document.body.classList.contains('viewing-gallery-cat')){
     exitModelPage();
+    exitGalleryCatPage();
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
     }));
@@ -1360,12 +1397,17 @@ function renderGallery(){
   // build panels
   panels.innerHTML = allCats.map(c=>{
     const list = getPhotosForCat(c);
+    const shareBtn = (c!=='all' && isAdmin)
+      ? `<div class="cat-panel-head"><button class="share-link-btn" onclick="copyGalleryCatLink('${c.replace(/'/g,"\\'")}')">🔗 Copy Link to This Category</button></div>`
+      : '';
     if(!list.length){
       return `<div class="cat-panel ${c===currentCat?'active':''}" data-cat="${c}">
+        ${shareBtn}
         <div class="empty"><big>📷</big>${isAdmin?`No photos in this category yet.<br><small>Click <b>+ Add Photos</b> below to add some.</small>`:'No photos yet.'}</div>
       </div>`;
     }
     return `<div class="cat-panel ${c===currentCat?'active':''}" data-cat="${c}">
+      ${shareBtn}
       <div class="masonry" ${isAdmin && c===currentCat ? `data-reorder-list="photos" data-reorder-cat="${c}"` : ''}>
         ${list.map((p,i)=>`
           <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openLb('${c}',${i})">
@@ -1375,6 +1417,7 @@ function renderGallery(){
               <div class="photo-cat-lbl">${p.category||''}</div>
             </div>
             <div class="photo-actions" onclick="event.stopPropagation()">
+              <button class="pa-btn pa-pin ${p.pinned?'is-pinned':''}" onclick="togglePinPhoto('${p.id}')" title="${p.pinned?'Unpin from homepage':'Pin to homepage'}">${p.pinned?'📌':'📍'}</button>
               <button class="pa-btn pa-edit" onclick="editPhoto('${p.id}')">✏</button>
               <button class="pa-btn pa-del"  onclick="delPhoto('${p.id}')">✕</button>
             </div>
@@ -1409,12 +1452,73 @@ function switchCat(cat){
   document.querySelectorAll('.cat-panel').forEach(p=>p.classList.toggle('active',p.dataset.cat===cat));
 }
 
+/* ── FEATURED (homepage pinned selections) ── */
+let featuredList = [];
+
+function renderFeatured(){
+  featuredList = photos.filter(p=>p.pinned);
+  const section = document.getElementById('featured');
+  const grid = document.getElementById('featured-grid');
+
+  // Only show this section at all if the admin has actually pinned
+  // something — an empty "Featured" section on a fresh site would just
+  // look broken.
+  if(!featuredList.length){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+
+  grid.innerHTML = featuredList.map((p,i)=>`
+    <div class="photo-item" onclick="openFeaturedLb(${i})">
+      <img src="${p.thumb||p.url}" alt="${p.title||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
+      <div class="photo-overlay">
+        <div class="photo-title">${p.title||''}</div>
+        <div class="photo-cat-lbl">${p.category||''}</div>
+      </div>
+      ${isAdmin ? `<div class="photo-actions" onclick="event.stopPropagation()">
+        <button class="pa-btn pa-pin is-pinned" onclick="togglePinPhoto('${p.id}')" title="Unpin from homepage">📌</button>
+      </div>` : ''}
+    </div>`).join('');
+}
+
+function openFeaturedLb(idx){ lbList = featuredList; lbIdx = idx; showLb(); }
+
+async function togglePinPhoto(id){
+  const p = photos.find(x=>x.id===id);
+  if(!p) return;
+  const newVal = !p.pinned;
+
+  // Soft, non-blocking guidance — pinning is meant for a curated homepage
+  // highlight reel, not the whole gallery. Nothing stops the admin from
+  // going past this, it's just a nudge.
+  if(newVal){
+    const currentlyPinned = photos.filter(x=>x.pinned).length;
+    if(currentlyPinned >= 30){
+      showToast(`Heads up — you now have ${currentlyPinned+1} pinned photos. 20–30 tends to work best for a focused homepage highlight.`);
+    }
+  }
+
+  p.pinned = newVal; // optimistic update
+  renderGallery();
+  renderFeatured();
+  try {
+    const { error } = await window._db.from('photos').update({ pinned: newVal }).eq('id', id);
+    if(error) throw error;
+    showToast(newVal ? 'Pinned to homepage!' : 'Unpinned.');
+  } catch(e){
+    p.pinned = !newVal; // revert on failure
+    renderGallery();
+    renderFeatured();
+    showToast('Could not update pin: ' + e.message);
+  }
+}
+
 function renderServices(){
   const cats = getAllServiceCats();
   document.getElementById('services-grid').innerHTML = cats.map(c=>{
     const meta = getSvcMeta(c);
     return `<div class="service-card" onclick="goToGalleryCat('${c}')" style="cursor:none;" title="View ${c} photos">
-      <span class="service-icon">${meta.icon}</span>
       <div class="service-name">${c}</div>
       <p class="service-desc">${meta.desc}</p>
     </div>`;
@@ -2275,10 +2379,108 @@ function exitModelPage(){
 }
 
 window.addEventListener('popstate', () => {
-  const slug = getRouteModelSlug();
-  if(slug) renderModelRoute(slug);
-  else exitModelPage();
+  const modelSlug = getRouteModelSlug();
+  const gallerySlug = getRouteGalleryCatSlug();
+  if(modelSlug) renderModelRoute(modelSlug);
+  else if(gallerySlug) renderGalleryCatRoute(gallerySlug);
+  else { exitModelPage(); exitGalleryCatPage(); }
 });
+
+/* ══════════════════════════════════════════════════════
+   GALLERY CATEGORY LANDING PAGES — /gallery/<slug>
+   ══════════════════════════════════════════════════════ */
+let currentGalleryCatSlug = null;
+let currentGalleryCatList = [];
+
+function getRouteGalleryCatSlug(){
+  const m = location.pathname.match(/^\/gallery\/([^/]+)\/?$/i);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+function navigateToGalleryCat(slug){
+  if(location.pathname !== '/gallery/'+slug){
+    history.pushState({galleryCat:slug}, '', '/gallery/'+slug);
+  }
+  renderGalleryCatRoute(slug);
+  window.scrollTo(0,0);
+}
+
+function exitGalleryCatPage(){
+  if(!document.body.classList.contains('viewing-gallery-cat')) return;
+  if(location.pathname !== '/'){
+    history.pushState({}, '', '/');
+  }
+  document.body.classList.remove('viewing-gallery-cat');
+  currentGalleryCatSlug = null;
+  currentGalleryCatList = [];
+  document.title = _origTitle;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if(metaDesc) metaDesc.setAttribute('content', _origDesc);
+  window.scrollTo(0,0);
+}
+
+// Copies a direct, shareable link to one category straight to the
+// clipboard — e.g. "Copy Link" on the Food & Cooking tab gives
+// https://yoursite.com/gallery/food-cooking
+async function copyGalleryCatLink(catName){
+  const slug = slugify(catName);
+  const url = location.origin + '/gallery/' + slug;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied: ' + url);
+  } catch(e){
+    // Clipboard API can fail (older browsers, non-HTTPS, permissions) —
+    // fall back to just showing the link so it can be copied manually.
+    showToast('Copy this link: ' + url);
+  }
+}
+
+function renderGalleryCatRoute(slug){
+  currentGalleryCatSlug = slug;
+  document.body.classList.add('viewing-gallery-cat');
+  const allCats = getCats();
+  const catName = allCats.find(c => slugify(c) === slug);
+
+  if(!catName){
+    document.getElementById('gallery-cat-page-inner').innerHTML =
+      `<div class="mp-notfound"><h2>Category Not Found</h2><p>We couldn't find a gallery at this address.</p><button class="hero-cta" onclick="exitGalleryCatPage()" style="cursor:none;">← Back to Site</button></div>`;
+    return;
+  }
+  renderGalleryCatPage(catName);
+}
+
+function renderGalleryCatPage(catName){
+  const list = getPhotosForCat(catName);
+  currentGalleryCatList = list;
+
+  document.title = `${catName} | ${settings.logo||'Studio Lorenzo'} Gallery`;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  const descText = `${catName} photography by ${settings.logo||'Studio Lorenzo'} — ${list.length} photo${list.length!==1?'s':''}.`;
+  if(metaDesc) metaDesc.setAttribute('content', descText);
+
+  const gridHtml = list.length
+    ? `<div class="masonry">${list.map((p,i)=>`
+        <div class="photo-item" onclick="openGalleryCatLb(${i})">
+          <img src="${p.thumb||p.url}" alt="${p.title||catName}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
+          <div class="photo-overlay">
+            <div class="photo-title">${p.title||''}</div>
+          </div>
+        </div>`).join('')}</div>`
+    : `<div class="mp-empty"><big>📷</big>No photos in this category yet.</div>`;
+
+  document.getElementById('gallery-cat-page-inner').innerHTML = `
+    <button class="mp-back" onclick="exitGalleryCatPage()">← Back to Site</button>
+    <div class="gcp-head">
+      <div>
+        <h1 class="gcp-title">${catName}</h1>
+        <div class="gcp-count">${list.length} photo${list.length!==1?'s':''}</div>
+      </div>
+      <button class="share-link-btn" onclick="copyGalleryCatLink('${catName.replace(/'/g,"\\'")}')">🔗 Copy Link to This Category</button>
+    </div>
+    ${gridHtml}`;
+}
+
+function openGalleryCatLb(idx){ lbList = currentGalleryCatList; lbIdx = idx; showLb(); }
 
 // Entry point called on first page load AND on client-side nav
 async function renderModelRoute(slug){
@@ -3219,7 +3421,8 @@ async function loadPhotosFromFirebase() {
     category: p.category || '',
     url: p.image_url,
     thumb: p.thumb_url || p.image_url,
-    order: (typeof p.order === 'number') ? p.order : null
+    order: (typeof p.order === 'number') ? p.order : null,
+    pinned: !!p.pinned
   }));
 
   // Sort by the admin's custom drag order when set; items without an
@@ -3281,10 +3484,13 @@ async function init(){
   // all appear right away instead of waiting on a network round-trip.
   renderAll();
 
-  // If this load is a direct hit on /model/<slug> (hard refresh or shared
-  // link), show the model page shell immediately using cached data.
+  // If this load is a direct hit on /model/<slug> or /gallery/<slug>
+  // (hard refresh or shared link), show that page's shell immediately
+  // using cached data.
   const routeSlug = getRouteModelSlug();
+  const galleryRouteSlug = getRouteGalleryCatSlug();
   if(routeSlug) renderModelRoute(routeSlug);
+  else if(galleryRouteSlug) renderGalleryCatRoute(galleryRouteSlug);
 
   // Firebase Auth is the single source of truth for admin login state.
   // This fires immediately on page load (restoring a previous session
@@ -3304,9 +3510,11 @@ async function init(){
   await loadPhotographersFromFirebase();
   await loadModelsFromFirebase();
   await loadBioFromFirebase();
-  // Now that models are loaded from Firebase, resolve the model-page route
-  // for real (the earlier call above may only have had stale/empty cache).
+  // Now that photos/models are loaded from Firebase, resolve the
+  // model-page or gallery-category route for real (the earlier call
+  // above may only have had stale/empty cache).
   if(routeSlug) renderModelRoute(routeSlug);
+  else if(galleryRouteSlug) renderGalleryCatRoute(galleryRouteSlug);
   setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>{
     if(el.getBoundingClientRect().top<window.innerHeight) el.classList.add('visible');
   }),100);
@@ -3331,8 +3539,9 @@ function closeMobileNav(){
 }
 function mobileNavGo(sel){
   closeMobileNav();
-  if(document.body.classList.contains('viewing-model')){
+  if(document.body.classList.contains('viewing-model') || document.body.classList.contains('viewing-gallery-cat')){
     exitModelPage();
+    exitGalleryCatPage();
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
     }));
