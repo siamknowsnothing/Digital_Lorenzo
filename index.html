@@ -1393,7 +1393,7 @@ function renderGallery(){
   panels.innerHTML = allCats.map(c=>{
     const list = getPhotosForCat(c);
     const shareBtn = (c!=='all')
-      ? `<div class="cat-panel-head"><button class="share-link-btn" onclick="copyGalleryCatLink('${c.replace(/'/g,"\\'")}')">🔗 Copy Link to This Category</button></div>`
+      ? `<div class="cat-panel-head"><button class="share-link-btn" onclick="shareGalleryCat('${c.replace(/'/g,"\\'")}')">📤 Share This Category</button></div>`
       : '';
     if(!list.length){
       return `<div class="cat-panel ${c===currentCat?'active':''}" data-cat="${c}">
@@ -1445,6 +1445,21 @@ function switchCat(cat){
   currentCat=cat;
   document.querySelectorAll('.cat-tab').forEach(t=>t.classList.toggle('active', t.dataset.cat===cat));
   document.querySelectorAll('.cat-panel').forEach(p=>p.classList.toggle('active',p.dataset.cat===cat));
+
+  // Keep the address bar in sync with whichever tab is active, so the
+  // real, current URL is always right there to copy — no separate
+  // "copy link" button needed. Uses replaceState (not pushState) so
+  // clicking through tabs doesn't fill up the browser's back button
+  // with every category — Back just leaves the gallery page.
+  if(document.body.classList.contains('viewing-gallery')){
+    const path = cat==='all' ? '/gallery' : '/gallery/'+slugify(cat);
+    if(location.pathname !== path){
+      history.replaceState({gallery:cat}, '', path);
+    }
+    document.title = cat==='all'
+      ? `Gallery | ${settings.logo||'Studio Lorenzo'}`
+      : `${cat} | ${settings.logo||'Studio Lorenzo'} Gallery`;
+  }
 }
 
 /* ── FEATURED (homepage pinned selections) ── */
@@ -2429,19 +2444,34 @@ function exitGalleryPage(){
   window.scrollTo(0,0);
 }
 
-// Copies a direct, shareable link to one category straight to the
-// clipboard — e.g. "Copy Link" on the Food & Cooking tab gives
-// https://yoursite.com/gallery/food-cooking
-async function copyGalleryCatLink(catName){
+// Opens the device's native share sheet (WhatsApp, Messages, Email, etc.)
+// for a direct link to one category — e.g. sharing the "Food & Cooking"
+// tab shares https://yoursite.com/gallery/food-cooking. Falls back to
+// copying the link on browsers without share-sheet support (mainly
+// desktop Firefox) — the address bar itself already shows this same URL
+// once that tab is selected, so this is just a faster way to send it.
+async function shareGalleryCat(catName){
   const slug = slugify(catName);
   const url = location.origin + '/gallery/' + slug;
+  const shareData = {
+    title: `${catName} | ${settings.logo||'Studio Lorenzo'}`,
+    text: `${catName} photography by ${settings.logo||'Studio Lorenzo'}`,
+    url
+  };
+  if(navigator.share){
+    try {
+      await navigator.share(shareData);
+    } catch(e){
+      // AbortError just means the person closed the share sheet without
+      // picking anything — not a real failure, nothing to show for it.
+    }
+    return;
+  }
   try {
     await navigator.clipboard.writeText(url);
     showToast('Link copied: ' + url);
   } catch(e){
-    // Clipboard API can fail (older browsers, non-HTTPS, permissions) —
-    // fall back to just showing the link so it can be copied manually.
-    showToast('Copy this link: ' + url);
+    showToast('Share this link: ' + url);
   }
 }
 
