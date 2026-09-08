@@ -124,6 +124,7 @@ section{padding:96px 52px;}
 .cat-panel.active{display:block;}
 /* masonry */
 .masonry{columns:3;column-gap:14px;}
+.gallery-load-sentinel{height:60px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;}
 @media(max-width:900px){.masonry{columns:2;}}
 @media(max-width:560px){.masonry{columns:1;}}
 .photo-item{break-inside:avoid;margin-bottom:14px;position:relative;overflow:hidden;cursor:none;display:block;}
@@ -1391,7 +1392,11 @@ function renderGallery(){
     `<button class="cat-tab ${c===currentCat?'active':''}" data-cat="${c}" onclick="switchCat('${c}')">${c==='all'?'All Work':c}</button>`
   ).join('');
 
-  // build panels
+  // build panels. Note: for a non-admin visitor, `photos` only ever holds
+  // the currently-active category's loaded page(s) — getPhotosForCat on
+  // any OTHER category will correctly come back empty. That's fine: only
+  // the active panel is ever actually visible (others stay CSS-hidden
+  // until switchCat fetches their own data and re-renders).
   panels.innerHTML = allCats.map(c=>{
     const list = getPhotosForCat(c);
     const shareBtn = (c!=='all')
@@ -1403,6 +1408,12 @@ function renderGallery(){
         <div class="empty"><big>📷</big>${isAdmin?`No photos in this category yet.<br><small>Click <b>+ Add Photos</b> below to add some.</small>`:'No photos yet.'}</div>
       </div>`;
     }
+    // Infinite-scroll sentinel — only on the active panel, only for a
+    // non-admin visitor (admin already has everything loaded), only
+    // while there's actually more to fetch.
+    const sentinel = (!isAdmin && c===currentCat && c===photosPage.cat && photosPage.hasMore)
+      ? `<div id="gallery-load-sentinel" class="gallery-load-sentinel"></div>`
+      : '';
     return `<div class="cat-panel ${c===currentCat?'active':''}" data-cat="${c}">
       ${shareBtn}
       <div class="masonry" ${isAdmin && c===currentCat ? `data-reorder-list="photos" data-reorder-cat="${c}"` : ''}>
@@ -1420,11 +1431,15 @@ function renderGallery(){
             </div>
           </div>`).join('')}
       </div>
+      ${sentinel}
     </div>`;
   }).join('');
 
-  // stats
-  document.getElementById('stat-p').textContent=photos.length;
+  // stats — for admin, photos.length IS the true total (everything is
+  // loaded). For a non-admin visitor, photos.length is now just whatever
+  // page is loaded — loadPhotoStats() (a single cheap count() aggregation
+  // read, called once on init) already set the real total; don't stomp it.
+  if(isAdmin) document.getElementById('stat-p').textContent=photos.length;
   document.getElementById('stat-c').textContent=cats.length;
 
   // Wire up drag-to-reorder on the currently visible category's grid
@@ -1440,6 +1455,21 @@ function renderGallery(){
       photos.sort((a,b)=>(a.order??0)-(b.order??0));
       showToast('Order saved!');
     });
+  }
+
+  initGalleryInfiniteScroll();
+}
+
+// A single, extremely cheap Firestore count() aggregation query — billed
+// as ONE read no matter how large the collection is — so the "X Photos"
+// stat can stay accurate for non-admin visitors without ever loading
+// every document just to count them.
+async function loadPhotoStats(){
+  try {
+    const snap = await _firestore.collection('photos').count().get();
+    if(!isAdmin) document.getElementById('stat-p').textContent = snap.data().count;
+  } catch(e){
+    console.warn('Photo count aggregation unavailable, falling back to loaded count:', e);
   }
 }
 
@@ -1462,13 +1492,26 @@ function switchCat(cat){
       ? `Gallery | ${settings.logo||'Studio Lorenzo'}`
       : `${cat} | ${settings.logo||'Studio Lorenzo'} Gallery`;
   }
+
+  // Admin already has the complete photo set loaded, so switching tabs
+  // is just an instant client-side filter (unchanged from before). A
+  // regular visitor doesn't have the full set — fetch a fresh, scoped
+  // first page for whichever category they just clicked.
+  if(!isAdmin && photosPage.cat !== cat){
+    loadPhotosForCategory(cat);
+  }
 }
 
-/* ── FEATURED (homepage pinned selections) ── */
+/* ── FEATURED (homepage pinned selections) ──
+   featuredList is populated by the separate loadFeaturedPhotos() query
+   (see the pagination section above), NOT derived from `photos` — the
+   main photos array is now just whatever page of the gallery happens to
+   be loaded, which would make a pinned photo disappear from the homepage
+   the moment it scrolled out of the loaded batch if we filtered it from
+   there instead. */
 let featuredList = [];
 
 function renderFeatured(){
-  featuredList = photos.filter(p=>p.pinned);
   const section = document.getElementById('featured');
   const grid = document.getElementById('featured-grid');
 
@@ -1505,13 +1548,14 @@ async function togglePinPhoto(id){
   // highlight reel, not the whole gallery. Nothing stops the admin from
   // going past this, it's just a nudge.
   if(newVal){
-    const currentlyPinned = photos.filter(x=>x.pinned).length;
+    const currentlyPinned = featuredList.length;
     if(currentlyPinned >= 20){
       showToast(`Heads up — you now have ${currentlyPinned+1} pinned photos. 10–20 tends to work best for a focused homepage highlight.`);
     }
   }
 
   p.pinned = newVal; // optimistic update
+  syncFeaturedListWith(p, newVal);
   renderGallery();
   renderFeatured();
   try {
@@ -1520,10 +1564,19 @@ async function togglePinPhoto(id){
     showToast(newVal ? 'Pinned to homepage!' : 'Unpinned.');
   } catch(e){
     p.pinned = !newVal; // revert on failure
+    syncFeaturedListWith(p, !newVal);
     renderGallery();
     renderFeatured();
     showToast('Could not update pin: ' + e.message);
   }
+}
+
+// Keeps the decoupled featuredList in step with a pin/unpin action
+// immediately, without waiting for a full loadFeaturedPhotos() re-fetch.
+function syncFeaturedListWith(photo, isPinned){
+  featuredList = featuredList.filter(f=>f.id!==photo.id);
+  if(isPinned) featuredList.push({...photo});
+  featuredList.sort((a,b)=>(a.order??0)-(b.order??0));
 }
 
 function renderServices(){
@@ -2480,8 +2533,9 @@ async function shareGalleryCat(catName){
 // slug is null for the bare /gallery route (show "All Work").
 function renderGalleryRoute(slug){
   document.body.classList.add('viewing-gallery');
+  let catName = null;
   if(slug){
-    const catName = getCats().find(c => slugify(c) === slug);
+    catName = getCats().find(c => slugify(c) === slug);
     currentCat = catName || 'all';
     document.title = catName
       ? `${catName} | ${settings.logo||'Studio Lorenzo'} Gallery`
@@ -2493,6 +2547,14 @@ function renderGalleryRoute(slug){
   const metaDesc = document.querySelector('meta[name="description"]');
   if(metaDesc) metaDesc.setAttribute('content', `Browse the full photography portfolio${slug&&currentCat!=='all'?' — '+currentCat:''}.`);
   renderGallery();
+
+  // Admin already has everything loaded — nothing to fetch. A regular
+  // visitor navigating here (nav link, browser back/forward, etc.) needs
+  // a fresh, scoped page for whatever category is now active, unless
+  // we're already looking at that exact category's loaded page.
+  if(!isAdmin && photosPage.cat !== currentCat){
+    loadPhotosForCategory(currentCat);
+  }
 }
 
 // Entry point called on first page load AND on client-side nav
@@ -2875,6 +2937,7 @@ async function savePhotos(){
       const { error } = await window._db.from('photos').update(updates).eq('id', eid);
       if(error){ showToast('Save failed: '+error.message); return; }
 
+      if(cat) await ensureCategoryRegistered(cat); // in case the edit introduced a new category
       photos[idx] = { ...photos[idx], url: newUrl, thumb: newUrl, category: cat||photos[idx].category, title: title||photos[idx].title };
     }
     closeM('m-photo'); renderAll(); showToast('Photo updated!'); return;
@@ -2885,6 +2948,14 @@ async function savePhotos(){
   if(!cat){ showToast('Please enter a category.'); return; }
 
   showToast(`Uploading ${uploadQueue.length} photo${uploadQueue.length>1?'s':''}…`);
+
+  // Assign each new photo a dense 'order' value continuing after the
+  // current highest — new uploads MUST have one, since the paginated
+  // public gallery queries orderBy('order'), and Firestore silently
+  // omits any document missing that field entirely from such a query.
+  // (This function only ever runs for a logged-in admin, who has the
+  // complete photo list loaded, so this max is accurate.)
+  let nextOrder = photos.reduce((m,p)=> (typeof p.order==='number') ? Math.max(m,p.order) : m, -1) + 1;
 
   const results = [];
   for(const q of uploadQueue){
@@ -2908,9 +2979,11 @@ async function savePhotos(){
     // lower-resolution thumbnail — so the preview always matches the
     // resolution of the photo actually uploaded.
 
+    const orderVal = nextOrder++;
+
     // Insert row into photos table
     const { data: row, error: dbErr } = await window._db.from('photos')
-      .insert({ title: title||'', category: cat, image_url: publicUrl, thumb_url: publicUrl })
+      .insert({ title: title||'', category: cat, image_url: publicUrl, thumb_url: publicUrl, order: orderVal })
       .select().single();
     if(dbErr){
       showToast('DB error: '+dbErr.message);
@@ -2918,14 +2991,15 @@ async function savePhotos(){
       continue;
     }
 
-    results.push({ id: row.id, title: row.title||'', category: row.category||'', url: publicUrl, thumb: publicUrl });
+    results.push({ id: row.id, title: row.title||'', category: row.category||'', url: publicUrl, thumb: publicUrl, order: orderVal, pinned:false });
   }
 
   if(!results.length){ showToast('No photos saved.'); return; }
+  await ensureCategoryRegistered(cat); // keeps the public gallery's category tabs complete
   photos.push(...results);
   closeM('m-photo');
   currentCat = cat;
-  await loadPhotosFromFirebase();
+  await loadAllPhotosForAdmin(); // this modal is admin-only, so re-sync the full admin list
   showToast(`${results.length} photo${results.length>1?'s':''} saved!`);
 }
 
@@ -3059,6 +3133,7 @@ function addCat(){
   // Add as a custom service (no icon/desc yet — will use default)
   customServices.push({name, icon:'📷', desc:'Professional photography with a distinctive creative perspective.'});
   S.set('customServices', customServices);
+  saveCustomServicesToFirebase();
   inp.value='';
   renderCatsBody();
   renderAll();
@@ -3070,6 +3145,7 @@ function deleteCat(cat){
   customServices = customServices.filter(s=>s.name!==cat);
   S.set('photos',photos);
   S.set('customServices',customServices);
+  saveCustomServicesToFirebase();
   renderCatsBody();
   renderAll();
   showToast(`"${cat}" removed.`);
@@ -3107,6 +3183,7 @@ function addService(){
   if(all.map(c=>c.toLowerCase()).includes(name.toLowerCase())){showToast('Service type already exists.');return;}
   customServices.push({name, icon, desc});
   S.set('customServices',customServices);
+  saveCustomServicesToFirebase();
   document.getElementById('new-svc-name').value='';
   document.getElementById('new-svc-icon').value='';
   document.getElementById('new-svc-desc').value='';
@@ -3118,6 +3195,7 @@ function deleteService(name){
   if(!confirm(`Remove "${name}" from services? (Photos in this category are kept.)`)) return;
   customServices = customServices.filter(s=>s.name!==name);
   S.set('customServices',customServices);
+  saveCustomServicesToFirebase();
   renderServicesBody();
   renderAll();
   showToast(`"${name}" removed from services.`);
@@ -3416,14 +3494,179 @@ function showToast(msg){
   t.textContent=msg;t.classList.add('show');
   clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2800);
 }
-async function loadPhotosFromFirebase() {
+/* ══════════════════════════════════════════════════════
+   PAGINATED PHOTO LOADING (public visitors)
+   ══════════════════════════════════════════════════════
+   With 1,100+ photos, the OLD loadPhotosFromFirebase() below fetched the
+   entire 'photos' collection — unfiltered, unlimited — on every single
+   page visit. That's 1,100+ Firestore reads per visit, regardless of
+   whether the visitor ever scrolled past the first row of photos.
+
+   Regular visitors now get a small first page (PHOTOS_PAGE_SIZE), with
+   more loading automatically as they scroll (see initGalleryInfiniteScroll
+   below). A logged-in admin still gets the complete list in one go — via
+   loadAllPhotosForAdmin, further down — because drag-to-reorder and
+   category management genuinely need every photo in memory. The
+   distinction is deliberate: an admin logging in occasionally is not what
+   was burning through the quota; anonymous visitor traffic was.
+*/
+const PHOTOS_PAGE_SIZE = 30;
+const PHOTOS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+let photosPage = {
+  cat: 'all',       // which category the current loaded set belongs to
+  lastDoc: null,     // raw Firestore doc snapshot — cursor for the next page
+  hasMore: true,
+  loading: false
+};
+
+function mapPhotoDoc(doc){
+  const p = doc.data();
+  return {
+    id: doc.id,
+    title: p.title || '',
+    category: p.category || '',
+    url: p.image_url,
+    thumb: p.thumb_url || p.image_url,
+    order: (typeof p.order === 'number') ? p.order : null,
+    pinned: !!p.pinned
+  };
+}
+
+// Fetches one page of photos, optionally scoped to a category, starting
+// after a given cursor doc. Ordered by the numeric 'order' field — every
+// photo is guaranteed to have one (see ensureCategoryRegistered's sibling,
+// the order-backfill in loadAllPhotosForAdmin), which matters because
+// Firestore silently OMITS documents from orderBy(field) results if they
+// don't have that field set at all.
+async function fetchPhotosPage(cat, afterDoc){
+  let q = _firestore.collection('photos').orderBy('order', 'asc');
+  if(cat && cat !== 'all') q = q.where('category', '==', cat);
+  if(afterDoc) q = q.startAfter(afterDoc);
+  q = q.limit(PHOTOS_PAGE_SIZE);
+  const snap = await q.get();
+  return snap.docs;
+}
+
+// The very first page load for a fresh visitor. Cached in localStorage for
+// a few minutes so hitting refresh, or a second visit shortly after, reuses
+// the cached page instead of re-querying Firestore.
+async function loadPhotosFromFirebase(){
+  const cacheKey = 'photosPageCache_all';
+  const cached = await S.get(cacheKey, null);
+  if(cached && (Date.now() - cached.at) < PHOTOS_CACHE_TTL_MS){
+    photos = cached.photos;
+    photosPage = { cat:'all', lastDoc:null, hasMore:cached.hasMore, loading:false };
+    currentCat = 'all';
+    renderAll(); // renderGallery() (called within) wires up infinite scroll
+    // Still worth a fresh background fetch of just the pinned/featured
+    // set — it's cheap (a handful of docs) and shouldn't wait on a TTL.
+    loadFeaturedPhotos();
+    return;
+  }
+
+  try {
+    const docs = await fetchPhotosPage('all', null);
+    photos = docs.map(mapPhotoDoc);
+    photosPage = { cat:'all', lastDoc: docs[docs.length-1]||null, hasMore: docs.length===PHOTOS_PAGE_SIZE, loading:false };
+    await S.set(cacheKey, { at: Date.now(), photos, hasMore: photosPage.hasMore });
+  } catch(e){
+    console.error('Failed to load photos:', e);
+    showToast('Could not load photos: ' + e.message);
+    return;
+  }
+
+  currentCat = 'all';
+  renderAll(); // renderGallery() (called within) wires up infinite scroll
+  loadFeaturedPhotos();
+}
+
+// Fetches the next page for whatever category is currently active and
+// appends it to `photos` (never replaces — infinite scroll accumulates).
+async function loadMorePhotos(){
+  if(photosPage.loading || !photosPage.hasMore) return;
+  photosPage.loading = true;
+  renderGalleryLoadMoreIndicator();
+  try {
+    const docs = await fetchPhotosPage(photosPage.cat, photosPage.lastDoc);
+    const newPhotos = docs.map(mapPhotoDoc);
+    photos.push(...newPhotos);
+    photosPage.lastDoc = docs[docs.length-1] || photosPage.lastDoc;
+    photosPage.hasMore = docs.length === PHOTOS_PAGE_SIZE;
+  } catch(e){
+    console.error('Failed to load more photos:', e);
+    showToast('Could not load more photos: ' + e.message);
+  }
+  photosPage.loading = false;
+  renderGallery();
+}
+
+// Switching category tabs, for a non-admin visitor, means we no longer
+// have every photo in memory to just filter client-side — fetch a fresh
+// first page scoped to that category instead.
+async function loadPhotosForCategory(cat){
+  photosPage = { cat, lastDoc:null, hasMore:true, loading:true };
+  photos = []; // clear the previous category's photos explicitly, rather
+               // than relying on the category filter to coincidentally
+               // hide them (which wouldn't work when switching TO "all")
+  renderGallery(); // shows an empty panel briefly while the fetch runs
+  try {
+    const docs = await fetchPhotosPage(cat, null);
+    photos = docs.map(mapPhotoDoc);
+    photosPage.lastDoc = docs[docs.length-1] || null;
+    photosPage.hasMore = docs.length === PHOTOS_PAGE_SIZE;
+  } catch(e){
+    console.error('Failed to load category:', e);
+    // Filtering by category AND ordering by a different field requires a
+    // Firestore composite index — the very first time this query runs,
+    // Firestore rejects it with a direct link to auto-create that index.
+    // Surface that link plainly instead of a generic error, since the fix
+    // is a one-click console visit, not a code problem.
+    if(e.code === 'failed-precondition' || /index/i.test(e.message||'')){
+      console.error('This category view needs a Firestore composite index. Firestore normally includes a direct "create it" link in this same error — check the browser console for a firestore.googleapis.com URL and open it once.');
+      showToast('This category needs a one-time database index — check the browser console for a link to create it.');
+    } else {
+      showToast('Could not load this category: ' + e.message);
+    }
+    photos = [];
+  }
+  photosPage.loading = false;
+  renderGallery(); // wires up infinite scroll internally
+}
+
+/* ── FEATURED / PINNED PHOTOS — decoupled from gallery pagination ──
+   The homepage's "Featured Selections" must show the admin's curated
+   picks regardless of which page of the (now-paginated) gallery happens
+   to be loaded. Queried separately — cheap, since it's typically only
+   10–20 documents no matter how large the main gallery grows. */
+async function loadFeaturedPhotos(){
+  try {
+    const snap = await _firestore.collection('photos').where('pinned','==',true).get();
+    featuredList = snap.docs.map(mapPhotoDoc);
+    // Small dataset — sorting client-side avoids needing yet another
+    // Firestore composite index (pinned == true + orderBy a second field).
+    featuredList.sort((a,b) => (a.order??0)-(b.order??0));
+  } catch(e){
+    console.warn('Failed to load featured photos:', e);
+    featuredList = [];
+  }
+  renderFeatured();
+}
+
+/* ── FULL LOAD FOR ADMINS ──
+   This is what loadPhotosFromFirebase used to do unconditionally for
+   everyone. Now it only runs for an authenticated admin session — see
+   the onAuthStateChanged handler in init() — since drag-to-reorder,
+   category management, and bulk editing all genuinely need every photo
+   in memory at once. */
+async function loadAllPhotosForAdmin(){
   const { data, error } = await window._db
     .from('photos')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Failed to load photos:', error);
+    console.error('Failed to load all photos for admin:', error);
     showToast('Could not load photos: ' + error.message);
     return;
   }
@@ -3438,18 +3681,89 @@ async function loadPhotosFromFirebase() {
     pinned: !!p.pinned
   }));
 
-  // Sort by the admin's custom drag order when set; items without an
-  // order yet (older photos, or a freshly-uploaded batch) fall back to
-  // newest-first, matching the previous default behavior.
   photos.sort((a,b) => {
     if(a.order!==null && b.order!==null) return a.order-b.order;
     if(a.order!==null) return -1;
     if(b.order!==null) return 1;
-    return 0; // preserve the created_at-desc order the query already gave us
+    return 0;
   });
 
-  currentCat = 'all'; // always show All Work tab after load
+  // No more pagination once admin has everything — the whole collection
+  // is already in memory, so "load more" has nothing left to add.
+  photosPage = { cat:'all', lastDoc:null, hasMore:false, loading:false };
+
+  // Admin already has every photo in memory — derive the Featured list
+  // straight from that instead of firing off a separate query for it.
+  featuredList = photos.filter(p=>p.pinned).sort((a,b)=>(a.order??0)-(b.order??0));
+
+  await optimizeGalleryDataOnce();
+
+  currentCat = 'all';
   renderAll();
+}
+
+// Runs once per admin session (not on every login) — silently backfills
+// an 'order' value onto any photo that predates the drag-to-reorder
+// feature, and registers any category found only "in the wild" among
+// photos into the small, Firestore-synced customServices list. Both use
+// data the admin's full load just fetched anyway, so this costs zero
+// extra reads — only the (one-time, per photo missing data) writes.
+let _galleryDataOptimized = false;
+async function optimizeGalleryDataOnce(){
+  if(_galleryDataOptimized) return;
+  _galleryDataOptimized = true;
+
+  const missingOrder = photos.filter(p => p.order === null);
+  const knownCats = new Set([...DEFAULT_CATS, ...customServices.map(s=>s.name)]);
+  const missingCats = [...new Set(photos.map(p=>p.category).filter(c => c && !knownCats.has(c)))];
+
+  if(!missingOrder.length && !missingCats.length) return;
+
+  try {
+    if(missingOrder.length){
+      // Assign dense order values continuing after the highest existing
+      // one, in the current (mostly created_at-desc) display order —
+      // Firestore batches cap at 500 writes, so chunk if needed.
+      const maxOrder = photos.reduce((m,p)=> p.order!==null ? Math.max(m,p.order) : m, -1);
+      let next = maxOrder + 1;
+      for(let i=0; i<missingOrder.length; i+=450){
+        const chunk = missingOrder.slice(i, i+450);
+        const batch = _firestore.batch();
+        chunk.forEach(p => {
+          const val = next++;
+          p.order = val; // keep in-memory copy in sync too
+          batch.update(_firestore.collection('photos').doc(String(p.id)), { order: val });
+        });
+        await batch.commit();
+      }
+    }
+    if(missingCats.length){
+      for(const cat of missingCats) await ensureCategoryRegistered(cat);
+    }
+    if(missingOrder.length || missingCats.length){
+      showToast('Optimized gallery data for faster loading.');
+    }
+  } catch(e){
+    console.warn('optimizeGalleryDataOnce failed:', e);
+  }
+}
+
+/* ── INFINITE SCROLL ── */
+let _galleryScrollObserver = null;
+function initGalleryInfiniteScroll(){
+  if(isAdmin) return; // admin already has everything loaded
+  if(_galleryScrollObserver) _galleryScrollObserver.disconnect();
+  const sentinel = document.getElementById('gallery-load-sentinel');
+  if(!sentinel) return;
+  _galleryScrollObserver = new IntersectionObserver(entries => {
+    if(entries[0].isIntersecting) loadMorePhotos();
+  }, { rootMargin: '600px' }); // start loading a bit before it's actually visible
+  _galleryScrollObserver.observe(sentinel);
+}
+
+function renderGalleryLoadMoreIndicator(){
+  const el = document.getElementById('gallery-load-sentinel');
+  if(el) el.textContent = photosPage.loading ? 'Loading more…' : '';
 }
 
 /* ── FIREBASE: SITE CONFIG (bio + settings persisted cross-device) ── */
@@ -3473,6 +3787,45 @@ async function loadBioFromFirebase(){
     // Do NOT re-render photographers here — loadPhotographersFromFirebase already did it
     // with fresher photo_url data from the DB
   } catch(e){ console.warn('loadBioFromFirebase:', e); }
+}
+
+// customServices drives the "What I Shoot" section AND (unioned with
+// whatever's in the currently-loaded photos) the gallery's category tabs.
+// It used to be saved with S.set() only — localStorage, meaning it only
+// ever existed in whichever browser the admin happened to use, never
+// actually reaching real visitors. Syncing it to Firestore (same small
+// site_config pattern as bio) fixes that, and is what makes it safe to
+// paginate the main photos collection below: category tabs stay complete
+// for every visitor even though we're no longer loading every photo.
+async function saveCustomServicesToFirebase(){
+  try {
+    await window._db.from('site_config').upsert({ key: 'services', value: JSON.stringify(customServices) }, { onConflict: 'key' });
+  } catch(e){ console.warn('saveCustomServicesToFirebase:', e); }
+}
+async function loadCustomServicesFromFirebase(){
+  try {
+    const { data, error } = await window._db.from('site_config').select('value').eq('key','services').single();
+    if(error || !data) return;
+    customServices = JSON.parse(data.value) || [];
+    await S.set('customServices', customServices);
+    renderServices();
+    renderGallery();
+  } catch(e){ console.warn('loadCustomServicesFromFirebase:', e); }
+}
+
+// Silently registers a category name into the synced customServices list
+// if it isn't already known (from DEFAULT_CATS or customServices itself).
+// Called whenever a photo is uploaded with a category — keeps the small,
+// cheap "known categories" list complete going forward, without ever
+// needing to scan the whole (potentially thousands-strong) photos
+// collection just to know what category tabs should exist.
+async function ensureCategoryRegistered(catName){
+  if(!catName) return;
+  const known = new Set([...DEFAULT_CATS, ...customServices.map(s=>s.name)]);
+  if(known.has(catName)) return;
+  customServices.push({ name: catName, icon:'📷', desc:'Professional photography with a distinctive creative perspective.' });
+  await S.set('customServices', customServices);
+  await saveCustomServicesToFirebase();
 }
 
 /* ── INIT ── */
@@ -3516,12 +3869,28 @@ async function init(){
     document.body.classList.toggle('admin', isAdmin);
     if(user){
       document.getElementById('cp-user-show').value = user.email || '';
+      loadAllPhotosForAdmin();
     }
     renderAll();
     syncMobAdminBtn();
   });
 
-  await loadPhotosFromFirebase();
+  await loadCustomServicesFromFirebase();
+
+  // Resolve which category (if any) this load should fetch, so a direct
+  // link to /gallery/<category> fetches THAT category's first page
+  // straight away instead of wastefully fetching the "all" page first.
+  // (If an admin session was already restored above, loadAllPhotosForAdmin
+  // handles loading everything — skip the paginated path entirely.)
+  const directCatName = galleryRouteSlug ? getCats().find(c=>slugify(c)===galleryRouteSlug) : null;
+  if(isAdmin){
+    // handled by onAuthStateChanged above
+  } else if(directCatName){
+    await loadPhotosForCategory(directCatName);
+  } else {
+    await loadPhotosFromFirebase();
+  }
+  loadPhotoStats(); // fire-and-forget — a single cheap count() read, doesn't block the rest of init
   await loadPhotographersFromFirebase();
   await loadModelsFromFirebase();
   await loadBioFromFirebase();
