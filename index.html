@@ -291,10 +291,10 @@ body.viewing-model #gallery-page{display:none;}
 .contact-link:hover{color:var(--gold);border-bottom-color:var(--gold);}
 
 /* ── FOOTER ── */
-footer{background:var(--surface);border-top:1px solid var(--border);padding:28px 52px;display:flex;justify-content:space-between;align-items:center;font-size:.68rem;color:var(--muted);letter-spacing:.07em;flex-wrap:wrap;gap:12px;}
-.footer-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.footer-right>span+span{position:relative;padding-left:12px;}
-.footer-right>span+span::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:10px;background:var(--border);}
+footer{background:var(--surface);border-top:1px solid var(--border);padding:28px 52px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:.68rem;color:var(--muted);letter-spacing:.07em;gap:12px;}
+footer>.footer-left{text-align:left;}
+footer>.footer-credit{text-align:center;opacity:.6;}
+footer>.footer-rights{text-align:right;}
 
 /* ── LIGHTBOX ── */
 #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:1000;align-items:center;justify-content:center;}
@@ -512,7 +512,8 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   .contact-links{gap:14px;}
 
   /* footer */
-  footer{padding:18px;flex-direction:column;text-align:center;gap:6px;}
+  footer{padding:18px;display:flex;flex-direction:column;text-align:center;gap:6px;}
+  footer>.footer-left,footer>.footer-credit,footer>.footer-rights{text-align:center;}
 
   /* admin bar — horizontal scroll strip */
   #admin-bar{padding:8px 12px;gap:8px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
@@ -699,8 +700,9 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 </section>
 
 <footer>
-  <span id="footer-copy">© 2025 Photographer</span>
-  <span class="footer-right"><span>All rights reserved</span><span style="opacity:.6;">Developed by Tariqul Siam</span></span>
+  <span id="footer-copy" class="footer-left">© 2025 Photographer</span>
+  <span class="footer-credit">Developed by Tariqul Siam</span>
+  <span class="footer-rights">All rights reserved</span>
 </footer>
 
 <!-- ── LIGHTBOX ── -->
