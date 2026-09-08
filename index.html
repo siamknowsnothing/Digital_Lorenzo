@@ -1392,7 +1392,7 @@ function renderGallery(){
   // build panels
   panels.innerHTML = allCats.map(c=>{
     const list = getPhotosForCat(c);
-    const shareBtn = (c!=='all' && isAdmin)
+    const shareBtn = (c!=='all')
       ? `<div class="cat-panel-head"><button class="share-link-btn" onclick="copyGalleryCatLink('${c.replace(/'/g,"\\'")}')">🔗 Copy Link to This Category</button></div>`
       : '';
     if(!list.length){
