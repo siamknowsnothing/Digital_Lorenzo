@@ -219,7 +219,7 @@ body.admin .photographer-photo-edit{display:flex;}
 body.viewing-model #model-page{display:block;}
 body.viewing-model #hero,
 body.viewing-model #featured,
-body.viewing-model #gallery,
+body.viewing-model #gallery-page,
 body.viewing-model #services,
 body.viewing-model #about,
 body.viewing-model #photographers,
@@ -249,19 +249,18 @@ body.admin .mp-photo-actions{display:flex;}
 .mp-notfound h2{font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:14px;}
 .mp-notfound p{color:var(--muted);margin-bottom:28px;}
 
-/* ── GALLERY CATEGORY LANDING PAGE ── */
-#gallery-cat-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
-body.viewing-gallery-cat #gallery-cat-page{display:block;}
-body.viewing-gallery-cat #hero,
-body.viewing-gallery-cat #featured,
-body.viewing-gallery-cat #gallery,
-body.viewing-gallery-cat #services,
-body.viewing-gallery-cat #about,
-body.viewing-gallery-cat #photographers,
-body.viewing-gallery-cat #models,
-body.viewing-gallery-cat #model-page,
-body.viewing-gallery-cat #contact{display:none;}
-body.viewing-model #gallery-cat-page{display:none;}
+/* ── DEDICATED GALLERY PAGE (/gallery and /gallery/<slug>) ── */
+#gallery-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
+body.viewing-gallery #gallery-page{display:block;}
+body.viewing-gallery #hero,
+body.viewing-gallery #featured,
+body.viewing-gallery #services,
+body.viewing-gallery #about,
+body.viewing-gallery #photographers,
+body.viewing-gallery #models,
+body.viewing-gallery #model-page,
+body.viewing-gallery #contact{display:none;}
+body.viewing-model #gallery-page{display:none;}
 .gcp-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:44px;}
 .gcp-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,4.5vw,3rem);}
 .gcp-count{color:var(--muted);font-size:.8rem;letter-spacing:.06em;margin-top:6px;}
@@ -561,7 +560,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 <header id="hdr">
   <a class="logo" href="#hero" onclick="scrollToSection('#hero');return false;" id="logo-el">Studio Lorenzo</a>
   <nav id="main-nav">
-    <button class="nav-a" onclick="scrollToSection('#gallery')">Gallery</button>
+    <button class="nav-a" onclick="goToGalleryPage(null)">Gallery</button>
     <button class="nav-a" onclick="scrollToSection('#about')">About</button>
     <button class="nav-a" onclick="scrollToSection('#photographers')">Photographers</button>
     <button class="nav-a" onclick="scrollToSection('#models')">Models</button>
@@ -575,7 +574,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 
 <!-- ── MOBILE NAV DRAWER ── -->
 <div id="mobile-nav-drawer">
-  <button class="mob-nav-a" onclick="mobileNavGo('#gallery')">Gallery</button>
+  <button class="mob-nav-a" onclick="closeMobileNav();goToGalleryPage(null)">Gallery</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#about')">About</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#photographers')">Photographers</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#models')">Models</button>
@@ -594,7 +593,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
     <h1 class="hero-title" id="hero-title">Through Every<br><i>Lens & Light</i></h1>
     <p class="hero-sub" id="hero-sub">Photography that captures the soul of every moment — from sweeping landscapes to intimate portraits.</p>
     <div class="hero-ctas">
-      <a class="hero-cta" href="#gallery" id="hero-cta1">View Portfolio</a>
+      <a class="hero-cta" href="/gallery" id="hero-cta1" onclick="return goToGalleryPage(event,null)">View Portfolio</a>
       <a class="hero-cta ghost" href="#contact" id="hero-cta2">Get in Touch</a>
     </div>
   </div>
@@ -609,14 +608,6 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   <div class="sec-label">Curated</div>
   <h2 class="sec-title">Featured <i>Selections</i></h2>
   <div id="featured-grid" class="masonry"></div>
-</section>
-
-<!-- ── GALLERY ── -->
-<section id="gallery">
-  <div class="sec-label">Portfolio</div>
-  <h2 class="sec-title">Selected <i>Work</i></h2>
-  <div class="cat-tabs" id="cat-tabs"></div>
-  <div id="cat-panels"></div>
 </section>
 
 <!-- ── SERVICES ── -->
@@ -688,9 +679,13 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   <div id="model-page-inner"></div>
 </section>
 
-<!-- ── GALLERY CATEGORY LANDING PAGE ── -->
-<section id="gallery-cat-page">
-  <div id="gallery-cat-page-inner"></div>
+<!-- ── GALLERY PAGE (full portfolio, all categories) ── -->
+<section id="gallery-page">
+  <button class="mp-back" onclick="exitGalleryPage()">← Back to Site</button>
+  <div class="sec-label">Portfolio</div>
+  <h2 class="sec-title">Selected <i>Work</i></h2>
+  <div class="cat-tabs" id="cat-tabs"></div>
+  <div id="cat-panels"></div>
 </section>
 
 <!-- ── CONTACT ── -->
@@ -1362,9 +1357,9 @@ function scrollToSection(sel){
   // nothing. Exit that view first, then scroll once the sections are
   // visible again (double rAF ensures the browser has reflowed after the
   // CSS class change before we try to measure/scroll to the target).
-  if(document.body.classList.contains('viewing-model') || document.body.classList.contains('viewing-gallery-cat')){
+  if(document.body.classList.contains('viewing-model') || document.body.classList.contains('viewing-gallery')){
     exitModelPage();
-    exitGalleryCatPage();
+    exitGalleryPage();
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
     }));
@@ -1494,8 +1489,8 @@ async function togglePinPhoto(id){
   // going past this, it's just a nudge.
   if(newVal){
     const currentlyPinned = photos.filter(x=>x.pinned).length;
-    if(currentlyPinned >= 30){
-      showToast(`Heads up — you now have ${currentlyPinned+1} pinned photos. 20–30 tends to work best for a focused homepage highlight.`);
+    if(currentlyPinned >= 20){
+      showToast(`Heads up — you now have ${currentlyPinned+1} pinned photos. 10–20 tends to work best for a focused homepage highlight.`);
     }
   }
 
@@ -1526,10 +1521,9 @@ function renderServices(){
 }
 
 function goToGalleryCat(cat){
-  // Switch to that category in the gallery and scroll there
-  currentCat = cat;
-  renderGallery();
-  document.querySelector('#gallery').scrollIntoView({behavior:'smooth'});
+  // The gallery no longer lives on the homepage — navigate to its
+  // dedicated page, pre-selecting this category's tab.
+  navigateToGalleryPage(slugify(cat));
 }
 
 function renderAbout(){
@@ -2381,38 +2375,54 @@ function exitModelPage(){
 window.addEventListener('popstate', () => {
   const modelSlug = getRouteModelSlug();
   const gallerySlug = getRouteGalleryCatSlug();
+  const galleryHome = getRouteGalleryHome();
   if(modelSlug) renderModelRoute(modelSlug);
-  else if(gallerySlug) renderGalleryCatRoute(gallerySlug);
-  else { exitModelPage(); exitGalleryCatPage(); }
+  else if(gallerySlug) renderGalleryRoute(gallerySlug);
+  else if(galleryHome) renderGalleryRoute(null);
+  else { exitModelPage(); exitGalleryPage(); }
 });
 
 /* ══════════════════════════════════════════════════════
-   GALLERY CATEGORY LANDING PAGES — /gallery/<slug>
+   DEDICATED GALLERY PAGE — /gallery and /gallery/<slug>
+   Reuses the existing tabs+masonry renderGallery() — a bare /gallery
+   shows all categories (tabs default to "All Work"); /gallery/<slug>
+   shows the same page with that category pre-selected, and the tabs
+   still let a visitor switch to any other category from there.
    ══════════════════════════════════════════════════════ */
-let currentGalleryCatSlug = null;
-let currentGalleryCatList = [];
 
+function getRouteGalleryHome(){
+  return location.pathname === '/gallery' || location.pathname === '/gallery/';
+}
 function getRouteGalleryCatSlug(){
   const m = location.pathname.match(/^\/gallery\/([^/]+)\/?$/i);
   return m ? decodeURIComponent(m[1]) : null;
 }
 
-function navigateToGalleryCat(slug){
-  if(location.pathname !== '/gallery/'+slug){
-    history.pushState({galleryCat:slug}, '', '/gallery/'+slug);
+// slug === null/undefined navigates to the bare /gallery (all categories).
+function navigateToGalleryPage(slug){
+  const path = slug ? '/gallery/'+slug : '/gallery';
+  if(location.pathname !== path){
+    history.pushState({gallery:slug||true}, '', path);
   }
-  renderGalleryCatRoute(slug);
+  renderGalleryRoute(slug);
   window.scrollTo(0,0);
 }
 
-function exitGalleryCatPage(){
-  if(!document.body.classList.contains('viewing-gallery-cat')) return;
+// Same intercept pattern as goToModelPage — real href for right-click/
+// open-in-new-tab, SPA navigation for a plain left click.
+function goToGalleryPage(e, slug){
+  if(e && (e.metaKey || e.ctrlKey || e.shiftKey || e.button===1)) return true;
+  if(e) e.preventDefault();
+  navigateToGalleryPage(slug || null);
+  return false;
+}
+
+function exitGalleryPage(){
+  if(!document.body.classList.contains('viewing-gallery')) return;
   if(location.pathname !== '/'){
     history.pushState({}, '', '/');
   }
-  document.body.classList.remove('viewing-gallery-cat');
-  currentGalleryCatSlug = null;
-  currentGalleryCatList = [];
+  document.body.classList.remove('viewing-gallery');
   document.title = _origTitle;
   const metaDesc = document.querySelector('meta[name="description"]');
   if(metaDesc) metaDesc.setAttribute('content', _origDesc);
@@ -2435,52 +2445,23 @@ async function copyGalleryCatLink(catName){
   }
 }
 
-function renderGalleryCatRoute(slug){
-  currentGalleryCatSlug = slug;
-  document.body.classList.add('viewing-gallery-cat');
-  const allCats = getCats();
-  const catName = allCats.find(c => slugify(c) === slug);
-
-  if(!catName){
-    document.getElementById('gallery-cat-page-inner').innerHTML =
-      `<div class="mp-notfound"><h2>Category Not Found</h2><p>We couldn't find a gallery at this address.</p><button class="hero-cta" onclick="exitGalleryCatPage()" style="cursor:none;">← Back to Site</button></div>`;
-    return;
+// slug is null for the bare /gallery route (show "All Work").
+function renderGalleryRoute(slug){
+  document.body.classList.add('viewing-gallery');
+  if(slug){
+    const catName = getCats().find(c => slugify(c) === slug);
+    currentCat = catName || 'all';
+    document.title = catName
+      ? `${catName} | ${settings.logo||'Studio Lorenzo'} Gallery`
+      : `Gallery | ${settings.logo||'Studio Lorenzo'}`;
+  } else {
+    currentCat = 'all';
+    document.title = `Gallery | ${settings.logo||'Studio Lorenzo'}`;
   }
-  renderGalleryCatPage(catName);
-}
-
-function renderGalleryCatPage(catName){
-  const list = getPhotosForCat(catName);
-  currentGalleryCatList = list;
-
-  document.title = `${catName} | ${settings.logo||'Studio Lorenzo'} Gallery`;
   const metaDesc = document.querySelector('meta[name="description"]');
-  const descText = `${catName} photography by ${settings.logo||'Studio Lorenzo'} — ${list.length} photo${list.length!==1?'s':''}.`;
-  if(metaDesc) metaDesc.setAttribute('content', descText);
-
-  const gridHtml = list.length
-    ? `<div class="masonry">${list.map((p,i)=>`
-        <div class="photo-item" onclick="openGalleryCatLb(${i})">
-          <img src="${p.thumb||p.url}" alt="${p.title||catName}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
-          <div class="photo-overlay">
-            <div class="photo-title">${p.title||''}</div>
-          </div>
-        </div>`).join('')}</div>`
-    : `<div class="mp-empty"><big>📷</big>No photos in this category yet.</div>`;
-
-  document.getElementById('gallery-cat-page-inner').innerHTML = `
-    <button class="mp-back" onclick="exitGalleryCatPage()">← Back to Site</button>
-    <div class="gcp-head">
-      <div>
-        <h1 class="gcp-title">${catName}</h1>
-        <div class="gcp-count">${list.length} photo${list.length!==1?'s':''}</div>
-      </div>
-      <button class="share-link-btn" onclick="copyGalleryCatLink('${catName.replace(/'/g,"\\'")}')">🔗 Copy Link to This Category</button>
-    </div>
-    ${gridHtml}`;
+  if(metaDesc) metaDesc.setAttribute('content', `Browse the full photography portfolio${slug&&currentCat!=='all'?' — '+currentCat:''}.`);
+  renderGallery();
 }
-
-function openGalleryCatLb(idx){ lbList = currentGalleryCatList; lbIdx = idx; showLb(); }
 
 // Entry point called on first page load AND on client-side nav
 async function renderModelRoute(slug){
@@ -3484,13 +3465,15 @@ async function init(){
   // all appear right away instead of waiting on a network round-trip.
   renderAll();
 
-  // If this load is a direct hit on /model/<slug> or /gallery/<slug>
-  // (hard refresh or shared link), show that page's shell immediately
-  // using cached data.
+  // If this load is a direct hit on /model/<slug>, /gallery, or
+  // /gallery/<slug> (hard refresh or shared link), show that page's
+  // shell immediately using cached data.
   const routeSlug = getRouteModelSlug();
   const galleryRouteSlug = getRouteGalleryCatSlug();
+  const galleryIsHome = getRouteGalleryHome();
   if(routeSlug) renderModelRoute(routeSlug);
-  else if(galleryRouteSlug) renderGalleryCatRoute(galleryRouteSlug);
+  else if(galleryRouteSlug) renderGalleryRoute(galleryRouteSlug);
+  else if(galleryIsHome) renderGalleryRoute(null);
 
   // Firebase Auth is the single source of truth for admin login state.
   // This fires immediately on page load (restoring a previous session
@@ -3511,10 +3494,11 @@ async function init(){
   await loadModelsFromFirebase();
   await loadBioFromFirebase();
   // Now that photos/models are loaded from Firebase, resolve the
-  // model-page or gallery-category route for real (the earlier call
-  // above may only have had stale/empty cache).
+  // model-page or gallery route for real (the earlier call above may
+  // only have had stale/empty cache).
   if(routeSlug) renderModelRoute(routeSlug);
-  else if(galleryRouteSlug) renderGalleryCatRoute(galleryRouteSlug);
+  else if(galleryRouteSlug) renderGalleryRoute(galleryRouteSlug);
+  else if(galleryIsHome) renderGalleryRoute(null);
   setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>{
     if(el.getBoundingClientRect().top<window.innerHeight) el.classList.add('visible');
   }),100);
@@ -3539,9 +3523,9 @@ function closeMobileNav(){
 }
 function mobileNavGo(sel){
   closeMobileNav();
-  if(document.body.classList.contains('viewing-model') || document.body.classList.contains('viewing-gallery-cat')){
+  if(document.body.classList.contains('viewing-model') || document.body.classList.contains('viewing-gallery')){
     exitModelPage();
-    exitGalleryCatPage();
+    exitGalleryPage();
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const el=document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth'});
     }));
