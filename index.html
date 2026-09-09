@@ -632,7 +632,6 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
       <h2 class="sec-title" id="about-name-el">Studio <i>Lorenzo</i></h2>
       <p class="about-bio" id="about-bio-el">Based in Dhaka, studio Lorenzo is one of the best in advertising &amp; fashion industry since 2005</p>
       <div class="about-stats">
-        <div class="stat"><span class="num" id="stat-p">0</span><span class="lbl">Photos</span></div>
         <div class="stat"><span class="num" id="stat-y">—</span><span class="lbl">Years Active</span></div>
         <div class="stat"><span class="num" id="stat-c">0</span><span class="lbl">Categories</span></div>
       </div>
@@ -1240,7 +1239,7 @@ const defaultBio = {
   facebook: '/studiolorenzo',
   ig: '/studio_lorenzo_bd',
   website: 'www.lorenzobd.com',
-  years: '2005'
+  years: '2005-present'
 };
 let photos   = [];
 let bio      = {...defaultBio};
@@ -1435,11 +1434,7 @@ function renderGallery(){
     </div>`;
   }).join('');
 
-  // stats — for admin, photos.length IS the true total (everything is
-  // loaded). For a non-admin visitor, photos.length is now just whatever
-  // page is loaded — loadPhotoStats() (a single cheap count() aggregation
-  // read, called once on init) already set the real total; don't stomp it.
-  if(isAdmin) document.getElementById('stat-p').textContent=photos.length;
+  // stats
   document.getElementById('stat-c').textContent=cats.length;
 
   // Wire up drag-to-reorder on the currently visible category's grid
@@ -1458,19 +1453,6 @@ function renderGallery(){
   }
 
   initGalleryInfiniteScroll();
-}
-
-// A single, extremely cheap Firestore count() aggregation query — billed
-// as ONE read no matter how large the collection is — so the "X Photos"
-// stat can stay accurate for non-admin visitors without ever loading
-// every document just to count them.
-async function loadPhotoStats(){
-  try {
-    const snap = await _firestore.collection('photos').count().get();
-    if(!isAdmin) document.getElementById('stat-p').textContent = snap.data().count;
-  } catch(e){
-    console.warn('Photo count aggregation unavailable, falling back to loaded count:', e);
-  }
 }
 
 function switchCat(cat){
@@ -3890,7 +3872,6 @@ async function init(){
   } else {
     await loadPhotosFromFirebase();
   }
-  loadPhotoStats(); // fire-and-forget — a single cheap count() read, doesn't block the rest of init
   await loadPhotographersFromFirebase();
   await loadModelsFromFirebase();
   await loadBioFromFirebase();
