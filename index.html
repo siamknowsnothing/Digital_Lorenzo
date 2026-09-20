@@ -290,6 +290,8 @@ body.viewing-model #gallery-page{display:none;}
 .contact-links{display:flex;gap:20px;justify-content:center;margin-top:32px;flex-wrap:wrap;}
 .contact-link{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);text-decoration:none;border-bottom:1px solid var(--border2);padding-bottom:2px;transition:color .2s,border-color .2s;cursor:none;}
 .contact-link:hover{color:var(--gold);border-bottom-color:var(--gold);}
+.contact-link.social-btn{border:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:10px 22px;color:var(--text);}
+.contact-link.social-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(200,169,110,.07);}
 
 /* ── FOOTER ── */
 footer{background:var(--surface);border-top:1px solid var(--border);padding:28px 52px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:.68rem;color:var(--muted);letter-spacing:.07em;gap:12px;}
@@ -722,8 +724,21 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   <button class="ab-btn" onclick="openM('m-services')">Manage Services</button>
   <button class="ab-btn" onclick="openM('m-bio')">Edit Profile</button>
   <button class="ab-btn" onclick="openM('m-settings')">Site Settings</button>
+  <button class="ab-btn" onclick="openVisitorStats()">Visitor Stats</button>
   <button class="ab-btn" onclick="openPassModal()">Change Password</button>
   <button class="ab-btn" onclick="doLogout()">Log Out</button>
+</div>
+
+<!-- ── VISITOR STATS (admin only) ── -->
+<div class="overlay" id="m-stats">
+  <div class="modal">
+    <button class="mcl" onclick="closeM('m-stats')">✕</button>
+    <h2>Visitor Stats</h2>
+    <p class="sub">Unique browser sessions, not counting your own admin visits.</p>
+    <div id="stats-body" style="min-height:140px;display:flex;align-items:center;justify-content:center;">
+      <div class="lb-spinner"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ── LOGIN MODAL ── -->
@@ -819,10 +834,12 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
     <input type="text" id="b-facebook" placeholder="/studiolorenzo">
     <label>Instagram</label>
     <input type="text" id="b-ig" placeholder="@yourhandle">
+    <label>YouTube</label>
+    <input type="text" id="b-youtube" placeholder="@yourhandle">
     <label>Website</label>
     <input type="url" id="b-website" placeholder="https://example.com">
     <label>Years Active</label>
-    <input type="number" id="b-years" placeholder="e.g. 10">
+    <input type="text" id="b-years" placeholder="e.g. 2005-present">
     <button class="btn-primary" onclick="saveBio()">Save Profile</button>
   </div>
 </div>
@@ -1237,7 +1254,8 @@ const defaultBio = {
   phone: '+8801746700004',
   address: defaultAddress,
   facebook: '/studiolorenzo',
-  ig: '/studio_lorenzo_bd',
+  ig: '/studio_lorenzo_digital',
+  youtube: '@studiolorenzobd',
   website: 'www.lorenzobd.com',
   years: '2005-present'
 };
@@ -2747,10 +2765,12 @@ function renderContact(){
   const phone=getProfileValue('phone');
   const facebook=getProfileValue('facebook');
   const ig=getProfileValue('ig');
+  const youtube=getProfileValue('youtube');
   const website=getProfileValue('website');
   if(phone) links.push(`<a class="contact-link" href="tel:${phone}">${phone}</a>`);
-  if(facebook) links.push(`<a class="contact-link" href="https://facebook.com/${facebook.replace(/^[@/]+/,'')}" target="_blank">${facebook}</a>`);
-  if(ig) links.push(`<a class="contact-link" href="https://instagram.com/${ig.replace(/^[@/]+/,'')}" target="_blank">${ig}</a>`);
+  if(facebook) links.push(`<a class="contact-link social-btn" href="https://facebook.com/${facebook.replace(/^[@/]+/,'')}" target="_blank" rel="noopener">Facebook</a>`);
+  if(ig) links.push(`<a class="contact-link social-btn" href="https://instagram.com/${ig.replace(/^[@/]+/,'')}" target="_blank" rel="noopener">Instagram</a>`);
+  if(youtube) links.push(`<a class="contact-link social-btn" href="https://youtube.com/@${youtube.replace(/^[@/]+/,'')}" target="_blank" rel="noopener">YouTube</a>`);
   if(website) links.push(`<a class="contact-link" href="${externalUrl(website)}" target="_blank">${website}</a>`);
   document.getElementById('contact-links').innerHTML=links.join('');
 }
@@ -3050,6 +3070,7 @@ function openBio(){
   document.getElementById('b-address').value=getProfileValue('address');
   document.getElementById('b-facebook').value=getProfileValue('facebook');
   document.getElementById('b-ig').value=getProfileValue('ig');
+  document.getElementById('b-youtube').value=getProfileValue('youtube');
   document.getElementById('b-website').value=getProfileValue('website');
   document.getElementById('b-years').value=getProfileValue('years');
   document.getElementById('b-photo-url').value=(!bio.photo||bio.photo.startsWith('data:'))?'':bio.photo;
@@ -3082,6 +3103,7 @@ async function saveBio(){
   bio.address=document.getElementById('b-address').value.trim();
   bio.facebook=document.getElementById('b-facebook').value.trim();
   bio.ig=document.getElementById('b-ig').value.trim();
+  bio.youtube=document.getElementById('b-youtube').value.trim();
   bio.website=document.getElementById('b-website').value.trim();
   bio.years=document.getElementById('b-years').value.trim();
   await S.set('bio',bio);
@@ -3492,6 +3514,68 @@ function showToast(msg){
    distinction is deliberate: an admin logging in occasionally is not what
    was burning through the quota; anonymous visitor traffic was.
 */
+/* ══════════════════════════════════════════════════════
+   VISITOR STATS (admin-only)
+   ══════════════════════════════════════════════════════
+   Deliberately NOT one document per visit — at any real scale that would
+   itself become the kind of read/write cost problem the pagination work
+   above was fixing. Instead, one small document per CALENDAR DAY
+   (visitor_stats/YYYY-MM-DD), atomically incremented — a single write per
+   visitor session, and reading "last 30 days" is just 30 cheap document
+   reads (well within free-tier limits) rather than scanning a
+   potentially huge log collection.
+*/
+let _visitTrackedThisLoad = false;
+
+async function trackVisit(){
+  try {
+    // Counts once per browser tab session — survives a refresh within
+    // that session, resets when the tab/browser fully closes. A simple,
+    // reasonable approximation of "a visitor" without needing any
+    // fingerprinting, cookies, or account system.
+    if(sessionStorage.getItem('slz_visit_tracked')) return;
+    sessionStorage.setItem('slz_visit_tracked', '1');
+
+    const todayKey = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    await _firestore.collection('visitor_stats').doc(todayKey).set(
+      { count: firebase.firestore.FieldValue.increment(1) },
+      { merge: true }
+    );
+  } catch(e){
+    console.warn('trackVisit failed:', e);
+  }
+}
+
+async function openVisitorStats(){
+  openM('m-stats');
+  const body = document.getElementById('stats-body');
+  body.innerHTML = '<div class="lb-spinner"></div>';
+  try {
+    const days = [];
+    for(let i=0; i<30; i++){
+      const d = new Date();
+      d.setDate(d.getDate()-i);
+      days.push(d.toISOString().slice(0,10));
+    }
+    const snaps = await Promise.all(
+      days.map(key => _firestore.collection('visitor_stats').doc(key).get())
+    );
+    let total = 0;
+    snaps.forEach(snap => { total += snap.exists ? (snap.data().count||0) : 0; });
+    const todayCount = snaps[0].exists ? (snaps[0].data().count||0) : 0;
+
+    body.innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-family:'Playfair Display',serif;font-size:3rem;color:var(--gold);">${total}</div>
+        <div style="color:var(--muted);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;margin-top:6px;">Visitors — Last 30 Days</div>
+        <div style="color:var(--muted);font-size:.72rem;margin-top:20px;">Today so far: ${todayCount}</div>
+      </div>`;
+  } catch(e){
+    console.error('Failed to load visitor stats:', e);
+    body.innerHTML = `<p style="color:var(--muted);text-align:center;font-size:.82rem;">Could not load stats: ${e.message}</p>`;
+  }
+}
+
 const PHOTOS_PAGE_SIZE = 30;
 const PHOTOS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -3855,6 +3939,13 @@ async function init(){
     }
     renderAll();
     syncMobAdminBtn();
+    // Track the visit only once we KNOW the confirmed auth state — never
+    // count the site owner's own admin visits, and never double-count if
+    // this listener happens to fire more than once in a session.
+    if(!_visitTrackedThisLoad){
+      _visitTrackedThisLoad = true;
+      if(!isAdmin) trackVisit();
+    }
   });
 
   await loadCustomServicesFromFirebase();
