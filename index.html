@@ -242,7 +242,7 @@ body.admin .photographer-photo-edit{display:flex;}
 .az-btn.disabled{opacity:.28;cursor:default;pointer-events:none;}
 
 /* ── MODEL LANDING PAGE ── */
-#model-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
+#model-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;max-width:1400px;margin:0 auto;}
 body.viewing-model #model-page{display:block;}
 body.viewing-model #hero,
 body.viewing-model #featured,
@@ -255,14 +255,14 @@ body.viewing-model #models-page,
 body.viewing-model #contact{display:none;}
 .mp-back{display:inline-flex;align-items:center;gap:8px;background:none;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;cursor:none;margin-bottom:44px;transition:color .2s;}
 .mp-back:hover{color:var(--gold);}
-.mp-hero{display:grid;grid-template-columns:260px 1fr;gap:56px;align-items:start;margin-bottom:64px;}
+.mp-hero{display:grid;grid-template-columns:320px 1fr;gap:64px;align-items:start;margin-bottom:64px;}
 @media(max-width:760px){.mp-hero{grid-template-columns:1fr;gap:28px;}}
 .mp-photo-frame{width:100%;aspect-ratio:3/4;background:var(--surface2);border:1px solid rgba(200,169,110,.25);overflow:hidden;position:relative;}
 .mp-photo-frame img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(8%);}
 .mp-photo-frame .ph-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--muted2);}
 .mp-role{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
 .mp-name{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,4.5vw,3.4rem);line-height:1.1;margin-bottom:20px;}
-.mp-bio{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:rgba(236,232,225,.75);line-height:1.85;max-width:560px;margin-bottom:28px;white-space:pre-line;}
+.mp-bio{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:rgba(236,232,225,.75);line-height:1.85;max-width:640px;margin-bottom:28px;white-space:pre-line;}
 .mp-contact{display:grid;gap:9px;font-size:.82rem;color:rgba(236,232,225,.7);}
 .mp-contact a{color:var(--gold);text-decoration:none;cursor:none;}
 .mp-contact a:hover{text-decoration:underline;}
@@ -278,7 +278,7 @@ body.admin .mp-photo-actions{display:flex;}
 .mp-notfound p{color:var(--muted);margin-bottom:28px;}
 
 /* ── DEDICATED GALLERY PAGE (/gallery and /gallery/<slug>) ── */
-#gallery-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
+#gallery-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;max-width:1400px;margin:0 auto;}
 body.viewing-gallery #gallery-page{display:block;}
 body.viewing-gallery #hero,
 body.viewing-gallery #featured,
@@ -297,7 +297,7 @@ body.viewing-model #gallery-page{display:none;}
 .cat-panel-head{display:flex;justify-content:flex-end;margin-bottom:14px;}
 
 /* ── MODELS DIRECTORY PAGE (/models) ── */
-#models-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;}
+#models-page{display:none;background:var(--bg);min-height:100vh;padding:140px 52px 96px;max-width:1400px;margin:0 auto;}
 body.viewing-models #models-page{display:block;}
 body.viewing-models #hero,
 body.viewing-models #featured,

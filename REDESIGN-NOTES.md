@@ -76,3 +76,22 @@ Playwright (Chromium) at 390 / 1024 / 1440, dark mode. Verified: search filters 
 No separate commit — nothing new to change on this page.
 
 ---
+
+## /model/&lt;slug&gt;
+
+### Audit findings
+- **Real layout issue at 1440px**: the profile hero used a fixed `260px` photo column plus a bio column capped at `max-width:560px`, with no overall page container constraint. On a 1440px-wide viewport this left roughly 400-500px of dead black space to the right of the bio text — the page read as broken/unfinished on desktop even though it was fine on mobile and tablet.
+- I initially misread a full-page screenshot of this page as showing a huge empty gap between the "Gallery" heading and the photo grid. Verified via DOM measurement that this was false: the model has 45 real gallery photos in a 3-column masonry, correctly producing a ~4400px-tall grid. The screenshot just downscaled so much (1440 to a few hundred px wide) that dark photos on a near-black background became illegible. Confirmed with a proper unscaled viewport screenshot of that section.
+- The "model not found" state (bad slug) was already well handled: clear heading, explanation, and a back-to-site CTA. No changes needed there.
+- Page `<title>` correctly updates to the model's name once Firestore data resolves (starts as the default site title, which is expected/unavoidable before the async fetch completes).
+
+### Decisions made on your behalf
+- **Widened the hero photo column from 260px to 320px and the bio measure from 560px to 640px**, and **added `max-width:1400px; margin:0 auto` to the page container** (applied identically to `/gallery` and `/models` for consistency, even though their multi-column grids made the issue far less visible there). This keeps the same asymmetric photo-left/text-right composition (not a rebuild) but gives the photo more presence and the bio more room, closing most of the dead space at 1440px and preventing a much worse version of the same issue on larger desktop monitors outside the required test range.
+
+### Testing
+Playwright (Chromium) at 390 / 1024 / 1440, dark mode. Verified: hero balance fixed at 1440 (screenshots before/after), clean single-column stack at 390, 45-photo gallery grid renders and lazy-loads correctly, not-found state renders properly for an invalid slug, no console errors.
+
+### Commit
+Committed on `redesign` branch: model-page hero rebalance + shared max-width container for all three dedicated pages.
+
+---
