@@ -155,3 +155,7 @@ You flagged, with screenshots from your own browser, that Home, /gallery, and a 
 2. **The three dedicated pages** (`/gallery`, `/models`, `/model/<slug>`) had `padding-top:140px` against a fixed header that's only ~68px tall, so there was roughly 72px of bare gap below the header before "Back to Site," then another 44px before the heading. Reduced to `padding-top:112px`.
 
 This was pre-existing spacing from before last night's work (I didn't introduce the 140px value, only added the max-width container around it earlier), but I should have caught the imbalance in my own audit rather than relying on you to find it live. Verified the fix visually against your exact screenshots (same framing) and confirmed no console errors. Committed on `redesign`.
+
+## Post-review: bigger hero headline
+
+You asked for the homepage opener text ("Through Every / Lens & Light") about 1.5-2x larger. First attempt at ~1.75x broke two things at once: the "Through Every" line wrapped onto two lines by itself (the text box was only 680px wide, too narrow for the bigger type), and the taller vertically-centered block collided with the fixed nav at the top. Landed on ~1.4x (`.hero-title` clamp `2.8rem/6.5vw/5.6rem` → `3rem/8vw/8rem`) and widened `.hero-content` from 680px to 960px so both lines stay intact, plus added 110px top padding to `#hero` so the centered block always clears the nav regardless of how tall it is. Verified clean at 390/1024/1440 and at a tall 1440x1250 window with no wrapping, overlap, or scroll required to see the CTAs.
