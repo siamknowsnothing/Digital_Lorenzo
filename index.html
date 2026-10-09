@@ -1728,15 +1728,24 @@ function renderAbout(){
 
 // Long bios (real content, not a bug) overflow a fixed card. Clamp by
 // default and only surface "Read more" when the text actually truncates,
-// so short bios never show a dead-looking button.
+// so short bios never show a dead-looking button. Must wait for the
+// Google Fonts (loaded with font-display:swap) to finish swapping in —
+// measuring scrollHeight against the fallback font's metrics on first
+// paint under-reports truncation and permanently hides the button for
+// bios that truncate only once the real font is active.
 function revealTruncatedBioToggles(scope){
-  scope.querySelectorAll('.photographer-bio').forEach(bio => {
-    const btn = bio.nextElementSibling;
-    if(!btn || !btn.classList.contains('bio-toggle')) return;
-    if(bio.scrollHeight > bio.clientHeight + 2){
-      btn.classList.add('show');
-    }
-  });
+  const measure = () => {
+    scope.querySelectorAll('.photographer-bio').forEach(bio => {
+      const btn = bio.nextElementSibling;
+      if(!btn || !btn.classList.contains('bio-toggle')) return;
+      btn.classList.toggle('show', bio.scrollHeight > bio.clientHeight + 2);
+    });
+  };
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(measure);
+  } else {
+    measure();
+  }
 }
 function toggleBioClamp(btn){
   const bio = btn.previousElementSibling;
