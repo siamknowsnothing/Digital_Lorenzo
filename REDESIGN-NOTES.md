@@ -95,3 +95,42 @@ Playwright (Chromium) at 390 / 1024 / 1440, dark mode. Verified: hero balance fi
 Committed on `redesign` branch: model-page hero rebalance + shared max-width container for all three dedicated pages.
 
 ---
+
+## Final full-site check
+
+Re-tested all four page types (Home, /gallery, /models, /model/naila-nayem) at 390 / 1024 / 1440 after every commit above was in place. Zero console errors or warnings on any page at any width. `prefers-reduced-motion: reduce` verified still working correctly on the home hero (opacity 1, no animation) — none of tonight's changes touched the existing reduced-motion media queries, so that coverage carries over unchanged. No new Safari/WebKit verification was possible (see the top-of-file note on Playwright's single available engine); relied on the codebase's existing `-webkit-`-prefixed patterns instead.
+
+## What changed, by page (summary)
+
+- **Home**: Featured section capped from an unbounded 69-photo dump to 9 + "View Portfolio" link; photographer bios clamped to 6 lines with a conditional Read more/Read less toggle (fixed ~3000px-tall cards down to a uniform 439px); eyebrow label removed from About/Models-teaser/Contact (6 → 3 eyebrows on the page).
+- **/gallery**: no page-specific changes; audit confirmed it was already solid.
+- **Nav (site-wide, found during /gallery)**: wired up the dead `.nav-a.active` CSS so Gallery/Models now actually highlight in the top nav when you're on those pages.
+- **/models**: no changes needed; inherited the Home bio-clamp fix automatically since it shares the same CSS class.
+- **/model/&lt;slug&gt;**: hero rebalanced (320px photo column, 640px bio measure, shared 1400px max-width container applied to all three dedicated pages) to fix a lopsided layout with ~400-500px of dead space at 1440px wide.
+
+## Data issues observed, NOT touched (live Firestore — out of scope per the hard rules)
+
+1. "Farhan Ahmed" appears 3 times in the Photographers grid with near-duplicate bios.
+2. 5 services ("Runway", "Jewelry", "Wedding", "Editorial", "ICM", "Advertising") share the identical placeholder description "Professional photography with a distinctive creative perspective."
+3. 69 photos are pinned to the homepage (the code's own admin nudge suggests 10-20); now capped at the display layer to 9, but the underlying pin set itself is unchanged and worth curating via the admin panel.
+4. One model ("Zeenat") has a placeholder avatar and no bio.
+
+None of these were edited, uploaded to, or deleted from Firestore — all four are display/content observations for you to act on (or not) when you're back.
+
+## Nothing skipped or broken
+
+Every planned step (taste audit → layout/typography → motion → Playwright test → fix → polish → commit) completed for all four pages. No page needed to be reverted. No test kept failing. No npm packages were installed. No existing routes, features, or files were removed. `git push` was never run; all work is committed on `redesign` only, with the `before-overnight-redesign` tag sitting on the prior commit for a clean rollback if needed.
+
+## Screenshots
+
+Taken via the Playwright MCP tool, which saves to the workspace root rather than inside the git repo: `/Volumes/Others/Website Folder/*.png` (sibling to `current-site/`, not tracked by git). Key ones, in chronological order of the work:
+
+- `audit-home-1440.png`, `audit-home-1440-b.png` — before state, showing the unbounded Featured dump (page height ~17,500px)
+- `home-photographers-1440.png`, `home-photographers-1024.png` — after the bio-clamp fix
+- `home-services-1024.png`, `home-hero-390.png`, `home-1440-after.png` — after state, home page
+- `final-home-1024.png` — final full-site check, home at 1024
+- `gallery-top-1440.png`, `gallery-390.png`, `gallery-lightbox-1440.png` — gallery page and lightbox
+- `models-1440.png`, `models-az-390.png` — models directory page
+- `model-page-1440.png`, `model-hero-1440.png` (before), `model-hero-1440-after.png` (after), `model-hero-1024.png`, `model-hero-390.png`, `model-gallery-1440.png`, `model-notfound-390.png` — model detail page, including the before/after of the hero rebalance and the not-found edge case
+
+Stop here — all four pages done, final check passed, nothing pushed.
