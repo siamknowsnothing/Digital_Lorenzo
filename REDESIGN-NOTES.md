@@ -37,3 +37,22 @@ Playwright here drives one browser engine (Chromium) — there was no way to sel
 Committed on `redesign` branch: homepage Featured cap + photographer bio clamp + eyebrow reduction.
 
 ---
+
+## /gallery
+
+### Audit findings
+This page was already in good shape: category tabs with working horizontal scroll on mobile, 3/2/1-column responsive masonry, working lightbox with prev/next and captions, per-category share links, infinite-scroll pagination sentinel. No content-density or layout bugs like Home had.
+
+One real cross-page bug found here: **`.nav-a.active` CSS existed but nothing in the JS ever applied the class** — the top nav never indicated which page you were on, anywhere on the site. Dead styling, not a redesign-introduced regression.
+
+### Decisions made on your behalf
+- **Added a working current-page nav indicator.** Tagged the Gallery and Models nav buttons with `data-nav="gallery"` / `data-nav="models"` and added CSS keyed off the existing `body.viewing-gallery` / `body.viewing-models` / `body.viewing-model` classes the app already sets — no new JS, no new state, just wiring up CSS that already half-existed. This fix applies site-wide (visible on Gallery, Models directory, and individual Model pages) but is grouped into this commit since it was found during the Gallery audit.
+- Did not touch the category tabs, masonry, lightbox, or share-link markup — they didn't need it.
+
+### Testing
+Playwright (Chromium) at 390 / 1024 / 1440, dark mode. Verified: category tabs scroll/switch correctly, lightbox opens with prev/next and caption, nav shows gold "Gallery" label while on this route, no console errors.
+
+### Commit
+Committed on `redesign` branch: nav current-page indicator (site-wide fix, surfaced here).
+
+---

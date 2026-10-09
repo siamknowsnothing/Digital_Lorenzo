@@ -103,6 +103,10 @@ nav{display:flex;gap:8px;align-items:center;}
 #admin-btn{border:1px solid var(--border2);color:var(--muted);padding:8px 18px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:none;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);}
 #admin-btn:hover{border-color:var(--gold);color:var(--gold);}
 #admin-btn.on{border-color:var(--gold);color:var(--gold);background:rgba(200,169,110,.07);}
+/* current-page nav indicator */
+body.viewing-gallery .nav-a[data-nav="gallery"],
+body.viewing-models .nav-a[data-nav="models"],
+body.viewing-model .nav-a[data-nav="models"]{color:var(--gold);}
 
 /* ── HERO ── */
 #hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 52px 80px;position:relative;overflow:hidden;}
@@ -637,10 +641,10 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 <header id="hdr">
   <a class="logo" href="#hero" onclick="scrollToSection('#hero');return false;" id="logo-el">Studio Lorenzo</a>
   <nav id="main-nav" aria-label="Primary">
-    <button class="nav-a" onclick="goToGalleryPage(null)">Gallery</button>
+    <button class="nav-a" data-nav="gallery" onclick="goToGalleryPage(null)">Gallery</button>
     <button class="nav-a" onclick="scrollToSection('#about')">About</button>
     <button class="nav-a" onclick="scrollToSection('#photographers')">Photographers</button>
-    <button class="nav-a" onclick="goToModelsPage(null)">Models</button>
+    <button class="nav-a" data-nav="models" onclick="goToModelsPage(null)">Models</button>
     <button class="nav-a" onclick="scrollToSection('#contact')">Contact</button>
     <button id="admin-btn" onclick="handleAdminClick()">Admin</button>
   </nav>
