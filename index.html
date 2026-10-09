@@ -187,8 +187,8 @@ body.admin .photo-actions{display:flex;}
 
 /* ── PHOTOGRAPHERS ── */
 #photographers{background:var(--surface);}
-.photographers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);}
-.photographer-card{background:var(--surface);padding:36px 32px;display:flex;flex-direction:column;justify-content:space-between;transition:background .3s,border-color .3s;border:1px solid transparent;}
+.photographers-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:1px;}
+.photographer-card{flex:0 1 270px;background:var(--surface);padding:36px 32px;display:flex;flex-direction:column;justify-content:space-between;transition:background .3s,border-color .3s;border:1px solid var(--border);}
 .photographer-card:hover{background:var(--surface2);border-color:rgba(200,169,110,.4);}
 /* photo frame */
 .photographer-photo-wrap{position:relative;display:inline-block;margin-bottom:24px;}
@@ -535,7 +535,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   footer{padding:22px 28px;}
   #admin-bar{padding:10px 28px;gap:8px;}
   .about-grid{gap:48px;}
-  .photographers-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));}
+  .photographer-card{flex-basis:240px;}
 }
 
 /* ── MOBILE (max 640px) ── */
@@ -574,8 +574,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   .stat .num{font-size:1.8rem;}
 
   /* photographers */
-  .photographers-grid{grid-template-columns:1fr;}
-  .photographer-card{padding:28px 22px;}
+  .photographer-card{flex-basis:100%;padding:28px 22px;}
 
   /* models search / A-Z filter */
   .model-search-wrap{max-width:none;}
