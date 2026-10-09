@@ -25,16 +25,22 @@
 
 <!-- Theme / PWA -->
 <meta name="theme-color" content="#080808">
+<meta name="color-scheme" content="dark">
 <link rel="manifest" href="/manifest.json">
 
 <!-- Favicon: gold "L" monogram matching the brand mark -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23080808'/%3E%3Ctext x='50' y='68' font-family='Georgia,serif' font-size='58' fill='%23c8a96e' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <!-- Structured data for local SEO -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "ProfessionalService",
+  "@type": ["LocalBusiness", "ProfessionalService"],
+  "logo": "https://www.lorenzodigital.com/favicon-512.png",
+  "areaServed": "Dhaka, Bangladesh",
   "name": "Studio Lorenzo",
   "image": "https://www.lorenzodigital.com/og-cover.jpg",
   "url": "https://www.lorenzodigital.com/",
@@ -46,10 +52,17 @@
     "postalCode": "1207",
     "addressCountry": "BD"
   },
-  "sameAs": []
+  "sameAs": [
+    "https://www.youtube.com/@studiolorenzobd",
+    "https://www.instagram.com/studio_lorenzo_digital/"
+  ]
 }
 </script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
+<link rel="dns-prefetch" href="https://firestore.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -61,9 +74,11 @@
   --gold: #c8a96e;
   --gold2: #e2c993;
   --text: #ece8e1;
-  --muted: #777;
-  --muted2: #555;
+  --muted: #8c8c8c;
+  --muted2: #858585;
   --danger: #b03030;
+  --ease: cubic-bezier(.22,1,.36,1);
+  color-scheme: dark;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
@@ -71,6 +86,8 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;font-w
 
 
 /* ── CURSOR ── */
+#cur,#cur-ring{opacity:0;transition:opacity .25s;}
+body.cur-on #cur,body.cur-on #cur-ring{opacity:1;}
 #cur{width:10px;height:10px;background:var(--gold);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate3d(-50%,-50%,0);will-change:transform;}
 #cur-ring{width:34px;height:34px;border:1px solid rgba(200,169,110,.45);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transform:translate3d(-50%,-50%,0);will-change:transform;}
 a,button,[onclick]{cursor:none;}
@@ -83,7 +100,7 @@ header.scrolled{background:rgba(8,8,8,.97);border-bottom-color:var(--border);}
 nav{display:flex;gap:8px;align-items:center;}
 .nav-a{background:none;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;padding:8px 14px;cursor:none;transition:color .2s;}
 .nav-a:hover,.nav-a.active{color:var(--gold);}
-#admin-btn{border:1px solid var(--border2);color:var(--muted);padding:8px 18px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:none;transition:all .2s;}
+#admin-btn{border:1px solid var(--border2);color:var(--muted);padding:8px 18px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:none;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);}
 #admin-btn:hover{border-color:var(--gold);color:var(--gold);}
 #admin-btn.on{border-color:var(--gold);color:var(--gold);background:rgba(200,169,110,.07);}
 
@@ -97,7 +114,7 @@ nav{display:flex;gap:8px;align-items:center;}
 .hero-title i{color:var(--gold);font-style:italic;}
 .hero-sub{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--muted);line-height:1.75;max-width:460px;opacity:0;animation:fadeUp .8s .6s forwards;}
 .hero-ctas{display:flex;gap:16px;margin-top:40px;opacity:0;animation:fadeUp .8s .8s forwards;flex-wrap:wrap;}
-.hero-cta{display:inline-flex;align-items:center;gap:10px;padding:13px 32px;border:1px solid var(--gold);color:var(--gold);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;transition:all .3s;cursor:none;background:none;font-family:'Lato',sans-serif;}
+.hero-cta{display:inline-flex;align-items:center;gap:10px;padding:13px 32px;border:1px solid var(--gold);color:var(--gold);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;transition:color .3s,border-color .3s,background-color .3s,transform .15s var(--ease),opacity .3s;cursor:none;background:none;font-family:'Lato',sans-serif;}
 .hero-cta:hover{background:var(--gold);color:#000;}
 .hero-cta.ghost{border-color:var(--border2);color:var(--muted);}
 .hero-cta.ghost:hover{border-color:var(--text);color:var(--text);background:none;}
@@ -116,7 +133,7 @@ section{padding:96px 52px;}
 /* category tabs */
 .cat-tabs{display:flex;gap:0;margin-bottom:48px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
 .cat-tabs::-webkit-scrollbar{display:none;}
-.cat-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'Lato',sans-serif;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;padding:12px 22px;cursor:none;transition:all .2s;white-space:nowrap;margin-bottom:-1px;}
+.cat-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'Lato',sans-serif;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;padding:12px 22px;cursor:none;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);white-space:nowrap;margin-bottom:-1px;}
 .cat-tab:hover{color:var(--text);}
 .cat-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
 /* section panels */
@@ -209,7 +226,7 @@ body.admin .photographer-photo-edit{display:flex;}
 .model-search-clear.show{display:block;}
 .model-search-clear:hover{color:var(--gold);}
 .az-filter{display:flex;flex-wrap:wrap;gap:6px;}
-.az-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:'Lato',sans-serif;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:none;transition:all .2s;flex-shrink:0;}
+.az-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:'Lato',sans-serif;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:none;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);flex-shrink:0;}
 .az-btn:first-child{width:auto;padding:0 14px;}
 .az-btn:not(.disabled):hover{border-color:var(--gold);color:var(--gold);}
 .az-btn.active{background:var(--gold);border-color:var(--gold);color:#080808;font-weight:700;}
@@ -331,7 +348,7 @@ footer>.footer-rights{text-align:right;}
 #admin-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(6,5,2,.97);border-top:1px solid var(--gold);padding:12px 52px;z-index:500;align-items:center;gap:10px;flex-wrap:wrap;}
 body.admin #admin-bar{display:flex;}
 #admin-bar>span{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-right:auto;}
-.ab-btn{background:none;border:1px solid var(--border2);color:var(--muted);padding:8px 16px;font-family:'Lato',sans-serif;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:none;transition:all .2s;}
+.ab-btn{background:none;border:1px solid var(--border2);color:var(--muted);padding:8px 16px;font-family:'Lato',sans-serif;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:none;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);}
 .ab-btn:hover{border-color:var(--text);color:var(--text);}
 .ab-btn.hl{border-color:var(--gold);color:var(--gold);}
 
@@ -385,7 +402,7 @@ select option{background:var(--surface);}
 #md-photo-up-area p{color:var(--muted);font-size:.8rem;}
 
 /* toast */
-.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--gold);color:var(--text);padding:12px 28px;font-size:.78rem;letter-spacing:.07em;z-index:9999;opacity:0;pointer-events:none;transition:all .28s;white-space:nowrap;}
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--gold);color:var(--text);padding:12px 28px;font-size:.78rem;letter-spacing:.07em;z-index:9999;opacity:0;pointer-events:none;transition:opacity .3s var(--ease),transform .3s var(--ease);white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* empty */
@@ -400,11 +417,11 @@ body.admin .photographer-card-actions{display:flex;}
 .blank-toggle{display:flex;align-items:center;gap:7px;margin-top:4px;cursor:pointer;}
 .blank-toggle input[type=checkbox]{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
 .blank-toggle span{font-size:.67rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);line-height:1;}
-.pg-action-btn{background:none;border:1px solid var(--border2);color:var(--muted);padding:6px 12px;font-family:'Lato',sans-serif;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;cursor:none;transition:all .2s;flex:1;text-align:center;}
+.pg-action-btn{background:none;border:1px solid var(--border2);color:var(--muted);padding:6px 12px;font-family:'Lato',sans-serif;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;cursor:none;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);flex:1;text-align:center;}
 .pg-action-btn:hover{border-color:var(--gold);color:var(--gold);}
 .pg-action-btn.del:hover{border-color:var(--danger);color:var(--danger);}
 /* about section edit btn */
-.about-edit-btn{display:none;margin-top:20px;background:none;border:1px solid var(--border2);color:var(--muted);padding:8px 18px;font-family:'Lato',sans-serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;cursor:none;transition:all .2s;}
+.about-edit-btn{display:none;margin-top:20px;background:none;border:1px solid var(--border2);color:var(--muted);padding:8px 18px;font-family:'Lato',sans-serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;cursor:none;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);}
 body.admin .about-edit-btn{display:inline-block;}
 .about-edit-btn:hover{border-color:var(--gold);color:var(--gold);}
 /* about photo upload in biography section */
@@ -413,7 +430,7 @@ body.admin .about-photo-upload-btn{display:block;}
 #about-photo-input{display:none;}
 
 /* scroll animations */
-.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s,transform .7s;}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
 .reveal.visible{opacity:1;transform:none;}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
@@ -443,9 +460,45 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   .reveal{opacity:1;transform:none;}
 }
 
+
+/* ── UPGRADE PASS: focus, press feedback, motion polish ── */
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1px;}
+.service-card:focus-visible,.photographer-card:focus-visible,.model-card:focus-visible{outline-offset:-2px;}
+.hero-cta:active,.btn-primary:active,.ab-btn:active,.nav-a:active,.cat-tab:active,.az-btn:active,.contact-link:active,.share-link-btn:active,.pg-action-btn:active{transform:scale(.97);}
+.photo-item:not(.img-ready){min-height:180px;}
+.photo-item img{transition:opacity .5s var(--ease),transform .6s var(--ease);}
+@media (hover:hover){.photo-item:hover img{transform:scale(1.025);}}
+@keyframes lbFade{from{opacity:0;}to{opacity:1;}}
+@keyframes lbZoom{from{opacity:0;transform:scale(.97);}to{opacity:1;transform:none;}}
+#lightbox.open{animation:lbFade .22s var(--ease);}
+#lightbox.open #lb-img{animation:lbZoom .3s var(--ease);}
+.reveal.visible .service-card,.reveal.visible .photographer-card,.reveal.visible .model-card{animation:fadeUp .7s var(--ease) both;}
+.reveal.visible .service-card:nth-child(2),.reveal.visible .photographer-card:nth-child(2),.reveal.visible .model-card:nth-child(2){animation-delay:.06s;}
+.reveal.visible .service-card:nth-child(3),.reveal.visible .photographer-card:nth-child(3),.reveal.visible .model-card:nth-child(3){animation-delay:.12s;}
+.reveal.visible .service-card:nth-child(4),.reveal.visible .photographer-card:nth-child(4),.reveal.visible .model-card:nth-child(4){animation-delay:.18s;}
+.reveal.visible .service-card:nth-child(n+5),.reveal.visible .photographer-card:nth-child(n+5),.reveal.visible .model-card:nth-child(n+5){animation-delay:.24s;}
+.footer-rights a{color:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border2);}
+.footer-rights a:hover{color:var(--gold);text-decoration-color:var(--gold);}
+.empty big,.mp-empty big{display:none;}
+/* touch / coarse pointers: native cursor, no custom cursor */
+@media (hover:none),(pointer:coarse){
+  *,*::before,*::after{cursor:auto !important;}
+  a,button,[onclick],[role="button"]{cursor:pointer !important;}
+  #cur,#cur-ring{display:none !important;}
+}
+@media (prefers-reduced-motion: reduce){
+  #cur,#cur-ring{transition:none;}
+  .photo-item{animation:none !important;}
+  .photo-item:hover img{transform:none !important;}
+  #lightbox.open,#lightbox.open #lb-img{animation:none !important;}
+  .reveal.visible .service-card,.reveal.visible .photographer-card,.reveal.visible .model-card{animation:none !important;}
+  .hero-eyebrow,.hero-title,.hero-sub,.hero-ctas{opacity:1 !important;animation:none !important;}
+}
+
 /* ── HAMBURGER MENU ── */
 #hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;padding:6px;cursor:none;z-index:300;}
-#hamburger span{display:block;width:22px;height:1.5px;background:var(--text);transition:all .3s;}
+#hamburger span{display:block;width:22px;height:1.5px;background:var(--text);transition:transform .3s var(--ease),opacity .3s;}
 #hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
 #hamburger.open span:nth-child(2){opacity:0;}
 #hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
@@ -456,7 +509,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 .mob-nav-a{background:none;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:1rem;letter-spacing:.22em;text-transform:uppercase;padding:16px 32px;cursor:pointer;transition:color .2s;width:100%;text-align:center;}
 .mob-nav-a:hover,.mob-nav-a:active{color:var(--gold);}
 .mob-nav-divider{width:40px;height:1px;background:var(--border2);margin:8px auto;}
-#mob-admin-btn{border:1px solid var(--border2);color:var(--muted);padding:12px 28px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:pointer;transition:all .2s;margin-top:12px;}
+#mob-admin-btn{border:1px solid var(--border2);color:var(--muted);padding:12px 28px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;background:none;font-family:'Lato',sans-serif;cursor:pointer;transition:color .2s,border-color .2s,background-color .2s,transform .15s var(--ease);margin-top:12px;}
 #mob-admin-btn.on{border-color:var(--gold);color:var(--gold);}
 
 /* ── PHOTO OVERLAY ALWAYS VISIBLE ON TOUCH ── */
@@ -571,14 +624,14 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
 </head>
 <body>
 
-<a href="#hero" class="skip-link">Skip to content</a>
+<a href="#main" class="skip-link">Skip to content</a>
 <div id="cur"></div>
 <div id="cur-ring"></div>
 
 <!-- ── HEADER ── -->
 <header id="hdr">
   <a class="logo" href="#hero" onclick="scrollToSection('#hero');return false;" id="logo-el">Studio Lorenzo</a>
-  <nav id="main-nav">
+  <nav id="main-nav" aria-label="Primary">
     <button class="nav-a" onclick="goToGalleryPage(null)">Gallery</button>
     <button class="nav-a" onclick="scrollToSection('#about')">About</button>
     <button class="nav-a" onclick="scrollToSection('#photographers')">Photographers</button>
@@ -586,13 +639,13 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
     <button class="nav-a" onclick="scrollToSection('#contact')">Contact</button>
     <button id="admin-btn" onclick="handleAdminClick()">Admin</button>
   </nav>
-  <button id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+  <button id="hamburger" onclick="toggleMobileNav()" aria-label="Menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
     <span></span><span></span><span></span>
   </button>
 </header>
 
 <!-- ── MOBILE NAV DRAWER ── -->
-<div id="mobile-nav-drawer">
+<div id="mobile-nav-drawer" role="navigation" aria-label="Mobile">
   <button class="mob-nav-a" onclick="closeMobileNav();goToGalleryPage(null)">Gallery</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#about')">About</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#photographers')">Photographers</button>
@@ -603,6 +656,7 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   <button id="mob-admin-btn" onclick="mobileAdminClick()">Admin</button>
 </div>
 
+<main id="main" tabindex="-1" style="outline:none;">
 <!-- ── HERO ── -->
 <section id="hero">
   <div class="hero-bg"></div>
@@ -725,19 +779,20 @@ a:focus-visible,button:focus-visible,.photo-item:focus-visible,.cat-tab:focus-vi
   <p class="contact-address" id="contact-address">House-18/6, 1st Floor<br>Mohammadia Housing Main Road<br>Mohammadpur, Dhaka-1207</p>
   <div class="contact-links" id="contact-links"></div>
 </section>
+</main>
 
 <footer>
   <span id="footer-copy" class="footer-left">© 2025 Photographer</span>
   <span class="footer-credit">Developed by Tariqul Siam</span>
-  <span class="footer-rights">All rights reserved</span>
+  <span class="footer-rights">All rights reserved · <a href="/privacy.html">Privacy</a></span>
 </footer>
 
 <!-- ── LIGHTBOX ── -->
-<div id="lightbox">
-  <button id="lb-close" onclick="closeLb()">✕</button>
-  <button id="lb-prev" onclick="lbStep(-1)">‹</button>
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <button id="lb-close" onclick="closeLb()" aria-label="Close photo viewer">✕</button>
+  <button id="lb-prev" onclick="lbStep(-1)" aria-label="Previous photo">‹</button>
   <img id="lb-img" src="" alt="">
-  <button id="lb-next" onclick="lbStep(1)">›</button>
+  <button id="lb-next" onclick="lbStep(1)" aria-label="Next photo">›</button>
   <div id="lb-cap"><h3 id="lb-title"></h3><p id="lb-cat"></p></div>
 </div>
 
@@ -1354,8 +1409,14 @@ function getSvcMeta(name){
 /* ── CURSOR ── */
 const cur=document.getElementById('cur'), ring=document.getElementById('cur-ring');
 let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;},{passive:true});
+const FINE_POINTER = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+document.addEventListener('mousemove',e=>{
+  if(!FINE_POINTER) return;
+  if(!document.body.classList.contains('cur-on')){ mx=rx=e.clientX; my=ry=e.clientY; document.body.classList.add('cur-on'); }
+  mx=e.clientX;my=e.clientY;
+},{passive:true});
 (function animCursor(){
+  if(!FINE_POINTER) return;
   cur.style.transform=`translate3d(${mx}px,${my}px,0) translate(-50%,-50%)`;
   rx+=(mx-rx)*.35; ry+=(my-ry)*.35;
   ring.style.transform=`translate3d(${rx}px,${ry}px,0) translate(-50%,-50%)`;
@@ -1449,7 +1510,7 @@ function renderGallery(){
     if(!list.length){
       return `<div class="cat-panel ${c===currentCat?'active':''}" data-cat="${c}">
         ${shareBtn}
-        <div class="empty"><big>📷</big>${isAdmin?`No photos in this category yet.<br><small>Click <b>+ Add Photos</b> below to add some.</small>`:'No photos yet.'}</div>
+        <div class="empty">${isAdmin?`No photos in this category yet.<br><small>Click <b>+ Add Photos</b> below to add some.</small>`:'No photos yet.'}</div>
       </div>`;
     }
     // Infinite-scroll sentinel — only on the active panel, only for a
@@ -1462,8 +1523,8 @@ function renderGallery(){
       ${shareBtn}
       <div class="masonry" ${isAdmin && c===currentCat ? `data-reorder-list="photos" data-reorder-cat="${c}"` : ''}>
         ${list.map((p,i)=>`
-          <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openLb('${c}',${i})">
-            <img src="${p.thumb||p.url}" alt="${p.title||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
+          <div class="photo-item" role="button" tabindex="0" aria-label="View photo: ${(p.title||p.category||'portfolio').replace(/"/g,'&quot;')}" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openLb('${c}',${i})">
+            <img src="${p.thumb||p.url}" alt="${(p.title||((p.category||'Portfolio')+' photograph by Studio Lorenzo')).replace(/"/g,'&quot;')}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
             <div class="photo-overlay">
               <div class="photo-title">${p.title||''}</div>
               <div class="photo-cat-lbl">${p.category||''}</div>
@@ -1552,8 +1613,8 @@ function renderFeatured(){
   section.style.display = '';
 
   grid.innerHTML = featuredList.map((p,i)=>`
-    <div class="photo-item" onclick="openFeaturedLb(${i})">
-      <img src="${p.thumb||p.url}" alt="${p.title||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
+    <div class="photo-item" role="button" tabindex="0" aria-label="View photo: ${(p.title||p.category||'featured').replace(/"/g,'&quot;')}" onclick="openFeaturedLb(${i})">
+      <img src="${p.thumb||p.url}" alt="${(p.title||((p.category||'Portfolio')+' photograph by Studio Lorenzo')).replace(/"/g,'&quot;')}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
       <div class="photo-overlay">
         <div class="photo-title">${p.title||''}</div>
         <div class="photo-cat-lbl">${p.category||''}</div>
@@ -1610,7 +1671,7 @@ function renderServices(){
   const cats = getAllServiceCats();
   document.getElementById('services-grid').innerHTML = cats.map(c=>{
     const meta = getSvcMeta(c);
-    return `<div class="service-card" onclick="goToGalleryCat('${c}')" style="cursor:none;" title="View ${c} photos">
+    return `<div class="service-card" role="link" tabindex="0" onclick="goToGalleryCat('${c}')" style="cursor:none;" title="View ${c} photos">
       <div class="service-name">${c}</div>
       <p class="service-desc">${meta.desc}</p>
     </div>`;
@@ -2722,13 +2783,13 @@ function renderModelGalleryGrid(){
   const grid = document.getElementById('mp-gallery-grid');
   if(!grid) return; // user may have navigated away already
   if(!modelGallery.length){
-    grid.innerHTML = `<div class="mp-empty"><big>📷</big>${isAdmin?'No photos yet. Click <b>+ Add Photos</b> above.':'No photos yet.'}</div>`;
+    grid.innerHTML = `<div class="mp-empty">${isAdmin?'No photos yet. Click <b>+ Add Photos</b> above.':'No photos yet.'}</div>`;
     return;
   }
   grid.innerHTML = `<div class="masonry" ${isAdmin ? `data-reorder-list="model_photos"` : ''}>
     ${modelGallery.map((p,i)=>`
-      <div class="photo-item" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openModelLb(${i})">
-        <img src="${p.thumb||p.url}" alt="${p.title||currentModelObj?.name||''}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
+      <div class="photo-item" role="button" tabindex="0" aria-label="View photo ${i+1} of ${(currentModelObj?.name||'model').replace(/"/g,'&quot;')}" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openModelLb(${i})">
+        <img src="${p.thumb||p.url}" alt="${(p.title||((currentModelObj?.name||'Model')+' portfolio photograph')).replace(/"/g,'&quot;')}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
         <div class="photo-overlay">
           <div class="photo-title">${p.title||''}</div>
         </div>
@@ -2782,7 +2843,7 @@ function mpProcessFiles(files){
 function renderMpThumbs(){
   document.getElementById('mp-up-thumbs').innerHTML = mpUploadQueue.map((q,i)=>`
     <div class="up-thumb">
-      <img src="${q.dataUrl}" alt="">
+      <img src="${q.dataUrl}" alt="Selected photo preview">
       <button class="up-thumb-del" onclick="removeMpUpload(${i})">✕</button>
     </div>`).join('');
 }
@@ -2874,10 +2935,20 @@ function showLb(){
   document.getElementById('lb-img').alt=(p.title? p.title+' — ':'')+(p.category||'')+' photograph by Studio Lorenzo';
   document.getElementById('lb-title').textContent=p.title||'';
   document.getElementById('lb-cat').textContent=p.category||'';
-  document.getElementById('lightbox').classList.add('open');
+  const lbEl=document.getElementById('lightbox');
+  if(!lbEl.classList.contains('open')){ lbReturnFocus=document.activeElement; }
+  lbEl.classList.add('open');
   document.body.style.overflow='hidden';
+  if(!lbEl.contains(document.activeElement)) document.getElementById('lb-close').focus();
 }
-function closeLb(){document.getElementById('lightbox').classList.remove('open');document.body.style.overflow='';}
+let lbReturnFocus=null;
+function closeLb(){
+  const lbEl=document.getElementById('lightbox');
+  const wasOpen=lbEl.classList.contains('open');
+  lbEl.classList.remove('open');document.body.style.overflow='';
+  if(wasOpen && lbReturnFocus && document.contains(lbReturnFocus)){ try{lbReturnFocus.focus();}catch(e){} }
+  lbReturnFocus=null;
+}
 function lbStep(d){lbIdx=(lbIdx+d+lbList.length)%lbList.length;showLb();}
 document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))closeLb();});
 document.addEventListener('keydown',e=>{
@@ -2885,6 +2956,17 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeLb();document.querySelectorAll('.overlay.open').forEach(m=>closeM(m.id));}
   if(lbOpen && e.key==='ArrowLeft')lbStep(-1);
   if(lbOpen && e.key==='ArrowRight')lbStep(1);
+  // keep Tab inside the open lightbox
+  if(lbOpen && e.key==='Tab'){
+    const f=[...document.querySelectorAll('#lightbox button')];
+    const first=f[0], last=f[f.length-1];
+    if(e.shiftKey && document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
+  }
+  // Enter / Space activates focusable non-native clickables (photo cards, service cards)
+  if((e.key==='Enter'||e.key===' ') && e.target.matches && e.target.matches('[role="button"][tabindex],[role="link"][tabindex]') && !e.target.matches('a,button,input,textarea,select')){
+    e.preventDefault(); e.target.click();
+  }
 });
 
 /* ── ADMIN ── */
@@ -2974,7 +3056,7 @@ function renderUpThumbs(){
   const grid=document.getElementById('up-thumbs');
   grid.innerHTML=uploadQueue.map((q,i)=>`
     <div class="up-thumb">
-      <img src="${q.dataUrl}" alt="">
+      <img src="${q.dataUrl}" alt="Selected photo preview">
       <button class="up-thumb-del" onclick="removeUpload(${i})">✕</button>
     </div>`).join('');
 }
@@ -3102,7 +3184,7 @@ function editPhoto(id){
   document.getElementById('up-title').value=p.title||'';
   document.getElementById('up-eid').value=p.id;
   document.getElementById('pm-edit-fields').style.display='block';
-  document.getElementById('up-thumbs').innerHTML=`<div class="up-thumb"><img src="${p.url}" alt=""></div>`;
+  document.getElementById('up-thumbs').innerHTML=`<div class="up-thumb"><img src="${p.url}" alt="Selected photo preview"></div>`;
   openM('m-photo');
 }
 
@@ -3574,10 +3656,24 @@ function openM(id){
   else if(id==='m-cats') openCats();
   else if(id==='m-services') openServicesModal();
   else if(id==='m-settings') openSettings();
-  document.getElementById(id).classList.add('open');
+  const mEl=document.getElementById(id);
+  if(!mEl.classList.contains('open')) mReturnFocus[id]=document.activeElement;
+  mEl.classList.add('open');
   document.body.style.overflow='hidden';
+  setTimeout(()=>{ const t=mEl.querySelector('input:not([type=file]):not([type=hidden]),textarea,select')||mEl.querySelector('.mcl'); if(t) try{t.focus();}catch(e){} },30);
 }
-function closeM(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+const mReturnFocus={};
+function closeM(id){
+  const mEl=document.getElementById(id);
+  mEl.classList.remove('open');document.body.style.overflow='';
+  const r=mReturnFocus[id]; delete mReturnFocus[id];
+  if(r && document.contains(r)) try{r.focus();}catch(e){}
+}
+document.querySelectorAll('.overlay').forEach(m=>{
+  m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
+  const h=m.querySelector('h2,h3'); if(h) m.setAttribute('aria-label',h.textContent.trim());
+  const x=m.querySelector('.mcl'); if(x) x.setAttribute('aria-label','Close dialog');
+});
 document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeM(m.id);}));
 
 /* ── TOAST ── */
@@ -4079,6 +4175,7 @@ function toggleMobileNav(){
   const btn = document.getElementById('hamburger');
   const open = drawer.classList.toggle('open');
   btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   document.body.style.overflow = open ? 'hidden' : '';
 }
 function closeMobileNav(){
@@ -4142,9 +4239,9 @@ function syncMobAdminBtn(){
 (function(){
   if(localStorage.getItem('cookieNoticeDismissed')) return;
   const bar=document.createElement('div');
-  bar.id='cookie-notice';
+  bar.id='cookie-notice';bar.setAttribute('role','region');bar.setAttribute('aria-label','Cookie notice');
   bar.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9997;background:rgba(8,8,8,.97);border-top:1px solid var(--border2);padding:16px 24px;display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:.78rem;color:var(--muted);';
-  bar.innerHTML=`<span style="max-width:520px;">This site uses local storage and analytics cookies to remember your preferences and understand how visitors use the site.</span>
+  bar.innerHTML=`<span style="max-width:520px;">This site uses local storage and analytics cookies to remember your preferences and understand how visitors use the site. <a href="/privacy.html" style="color:var(--gold);">Privacy Policy</a></span>
     <button id="cookie-ok" style="border:1px solid var(--border2);color:var(--gold);background:none;padding:8px 18px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;cursor:none;">Got it</button>`;
   document.body.appendChild(bar);
   // Push the back-to-top button above the cookie bar so the bar never covers it

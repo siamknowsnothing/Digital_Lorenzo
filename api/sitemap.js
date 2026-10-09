@@ -18,7 +18,7 @@ const SITE_ORIGIN = 'https://www.lorenzodigital.com';
 
 // Static pages that always exist, regardless of what's in the database.
 // #gallery is gone — the gallery is now its own real page at /gallery.
-const STATIC_PATHS = ['/', '/gallery', '/#services', '/#about', '/#photographers', '/#models', '/#contact'];
+const STATIC_PATHS = ['/', '/gallery', '/#services', '/#about', '/#photographers', '/#models', '/#contact', '/privacy.html'];
 
 export default async function handler(req, res) {
   let modelSlugs = [];
