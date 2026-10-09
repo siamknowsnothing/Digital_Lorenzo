@@ -146,3 +146,12 @@ You spotted that the "Read more" button was missing entirely on the Photographer
 I didn't catch this myself because every one of my Playwright tests waited a few seconds after navigation (for Firestore data) before checking anything, and by then the fonts had already finished loading — the race window had already closed in my test environment. Your fresh real-browser load hit the window my tests didn't.
 
 **Fix**: the measurement now waits on `document.fonts.ready` before checking `scrollHeight`, so it always measures against the final, real font metrics regardless of load timing. Verified by polling for the cards to render with zero extra settle time (mirroring a fast real page load) — all 6 "Read more" buttons now show correctly. Committed separately on `redesign`.
+
+## Post-review fix: large gap between nav and content
+
+You flagged, with screenshots from your own browser, that Home, /gallery, and a model page all had a visually large empty gap between the fixed nav bar and the first real content. Two separate causes:
+
+1. **Home hero** used `justify-content:flex-end` inside `min-height:100vh`, pinning the hero text to the very bottom of the viewport. On a tall browser window that leaves a large dead zone at the top before any text appears. Changed to `justify-content:center` — verified at 1440x1250 (a tall window) and at 390 mobile; reads well at both.
+2. **The three dedicated pages** (`/gallery`, `/models`, `/model/<slug>`) had `padding-top:140px` against a fixed header that's only ~68px tall, so there was roughly 72px of bare gap below the header before "Back to Site," then another 44px before the heading. Reduced to `padding-top:112px`.
+
+This was pre-existing spacing from before last night's work (I didn't introduce the 140px value, only added the max-width container around it earlier), but I should have caught the imbalance in my own audit rather than relying on you to find it live. Verified the fix visually against your exact screenshots (same framing) and confirmed no console errors. Committed on `redesign`.
