@@ -56,3 +56,23 @@ Playwright (Chromium) at 390 / 1024 / 1440, dark mode. Verified: category tabs s
 Committed on `redesign` branch: nav current-page indicator (site-wide fix, surfaced here).
 
 ---
+
+## /models
+
+### Audit findings
+Already solid: search-by-name and A-Z filter both work correctly (tested programmatically), responsive grid (4 / ~3 / 1 columns), consistent card heights. The homepage's bio-clamp fix (shared `.photographer-bio` class) already applies here automatically, keeping all 9 model cards at a uniform 462px (down from what would have been wildly uneven heights for models with long bios, same class of bug as the Photographers section).
+
+A full-page screenshot at 1440 initially looked like 4 model cards were missing their "View Profile" button — verified via DOM query that every one of the 9 cards has the link; what I was seeing was the fixed-position cookie-consent banner compositing on top of that row during the scrolled full-page screenshot capture, not a real rendering bug. Confirmed by checking `getBoundingClientRect` and link presence directly rather than trusting the stitched screenshot.
+
+One model ("Zeenat") has a placeholder avatar and no bio text — real incomplete data, not touched.
+
+### Decisions made on your behalf
+None needed beyond what Home and Gallery's commits already provide. No code changes specific to this page.
+
+### Testing
+Playwright (Chromium) at 390 / 1024 / 1440, dark mode. Verified: search filters correctly (tested "Naila" → 1 result), A-Z filter bar wraps cleanly on mobile, card grid reflows 4 → ~3 → 1 columns, bio clamp consistent, no console errors.
+
+### Commit
+No separate commit — nothing new to change on this page.
+
+---
