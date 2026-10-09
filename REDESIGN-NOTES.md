@@ -134,3 +134,15 @@ Taken via the Playwright MCP tool, which saves to the workspace root rather than
 - `model-page-1440.png`, `model-hero-1440.png` (before), `model-hero-1440-after.png` (after), `model-hero-1024.png`, `model-hero-390.png`, `model-gallery-1440.png`, `model-notfound-390.png` — model detail page, including the before/after of the hero rebalance and the not-found edge case
 
 Stop here — all four pages done, final check passed, nothing pushed.
+
+---
+
+## Post-review fix (caught by you, not by my own testing)
+
+You spotted that the "Read more" button was missing entirely on the Photographers cards in your own browser, even though every bio was visibly truncated.
+
+**Root cause**: `revealTruncatedBioToggles()` measured `scrollHeight` vs `clientHeight` synchronously right after rendering the cards, but the site's Google Fonts load asynchronously with `font-display:swap`. On first paint, the browser renders with a fallback font whose metrics can fit the bio text inside the 6-line clamp box — so the truncation check ran, found no overflow, and never added the `.show` class. The real font then swapped in a moment later, the text visibly overflowed, but the check had already run once and never re-fired.
+
+I didn't catch this myself because every one of my Playwright tests waited a few seconds after navigation (for Firestore data) before checking anything, and by then the fonts had already finished loading — the race window had already closed in my test environment. Your fresh real-browser load hit the window my tests didn't.
+
+**Fix**: the measurement now waits on `document.fonts.ready` before checking `scrollHeight`, so it always measures against the final, real font metrics regardless of load timing. Verified by polling for the cards to render with zero extra settle time (mirroring a fast real page load) — all 6 "Read more" buttons now show correctly. Committed separately on `redesign`.
