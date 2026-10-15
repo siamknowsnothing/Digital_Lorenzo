@@ -1,27 +1,29 @@
 /**
- * Vercel Edge Middleware — social-preview support for /model/:slug pages.
+ * Vercel Edge Middleware — social-preview support for /talent/:slug pages
+ * (and the legacy /model/:slug URL, which still works).
  *
  * Studio Lorenzo is a client-rendered single-page app, so a crawler that
  * doesn't run JavaScript (Facebook, WhatsApp, Twitter/X, LinkedIn, Slack,
- * Telegram, Discord, etc.) sees an empty shell and no per-model title,
- * description, or image when a model's link is shared.
+ * Telegram, Discord, etc.) sees an empty shell and no per-talent title,
+ * description, or image when a talent's link is shared.
  *
  * This middleware runs BEFORE the normal vercel.json rewrite to index.html.
- * It only acts on requests to /model/<slug> AND only when the request's
- * User-Agent matches a known crawler/bot. For every normal human visitor
- * it does nothing and the request falls through to the SPA exactly as
- * before — this file changes nothing about how real visitors experience
- * the site.
+ * It only acts on requests to /talent/<slug> or /model/<slug> AND only
+ * when the request's User-Agent matches a known crawler/bot. For every
+ * normal human visitor it does nothing and the request falls through to
+ * the SPA exactly as before — this file changes nothing about how real
+ * visitors experience the site.
  *
  * When a crawler is detected, it fetches the matching model from Firestore
- * (via the public REST API — this relies on your existing
+ * (the 'models' collection — unchanged, this is a labels/URLs rename only;
+ * via the public REST API — this relies on your existing
  * "allow read: if true" Firestore rule, so no credentials are needed here)
  * and returns a tiny static HTML document with proper Open Graph / Twitter
- * Card meta tags pointing at that model's name, bio, and photo.
+ * Card meta tags pointing at that talent's name, bio, and photo.
  */
 
 export const config = {
-  matcher: '/model/:path*',
+  matcher: ['/talent/:path*', '/model/:path*'],
 };
 
 // Your Firebase project ID (from firebaseConfig in index.html)
@@ -38,8 +40,8 @@ export default async function middleware(request) {
   if (!BOT_UA_REGEX.test(userAgent)) return; // real browser — let the SPA handle it
 
   const url = new URL(request.url);
-  const match = url.pathname.match(/^\/model\/([^/]+)\/?$/i);
-  if (!match) return; // not a model page
+  const match = url.pathname.match(/^\/(?:talent|model)\/([^/]+)\/?$/i);
+  if (!match) return; // not a talent page
 
   const slug = decodeURIComponent(match[1]);
 
@@ -99,7 +101,7 @@ function slugify(name) {
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'model'
+      .replace(/^-|-$/g, '') || 'talent'
   );
 }
 
@@ -111,13 +113,15 @@ function escapeHtml(s) {
 }
 
 function renderModelOgHtml(model, origin, slug) {
-  const title = `${model.name} | ${SITE_NAME} Models`;
+  const title = `${model.name} | ${SITE_NAME} Talents`;
   const desc = (
     model.bio ||
-    `${model.name} — ${model.role || 'Model'} represented by ${SITE_NAME}.`
+    `${model.name} — ${model.role || 'Talent'} represented by ${SITE_NAME}.`
   ).slice(0, 160);
   const image = model.photo_url || `${origin}/og-cover.jpg`;
-  const pageUrl = `${origin}/model/${slug}`;
+  // Canonical/OG URL always points at the new /talent/ path, even when a
+  // crawler is fetching the legacy /model/<slug> link.
+  const pageUrl = `${origin}/talent/${slug}`;
 
   return `<!DOCTYPE html>
 <html lang="en">

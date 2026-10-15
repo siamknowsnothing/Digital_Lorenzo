@@ -2,7 +2,7 @@
  * Dynamic sitemap.xml
  *
  * The static sitemap.xml you had before could only ever list the fixed
- * pages that existed when it was written — every /model/<slug> page added
+ * pages that existed when it was written — every /talent/<slug> page added
  * afterward through the admin panel was invisible to search engines,
  * since nothing ever regenerated the file.
  *
@@ -18,7 +18,9 @@ const SITE_ORIGIN = 'https://www.lorenzodigital.com';
 
 // Static pages that always exist, regardless of what's in the database.
 // #gallery is gone — the gallery is now its own real page at /gallery.
-const STATIC_PATHS = ['/', '/gallery', '/#services', '/#about', '/#photographers', '/#models', '/#contact', '/privacy.html'];
+// /talents is its own real page too; #creatives/#talents are in-page
+// anchors (Models/Photographers were renamed to Talents/Creatives).
+const STATIC_PATHS = ['/', '/gallery', '/talents', '/#services', '/#about', '/#creatives', '/#talents', '/#contact', '/privacy.html'];
 
 export default async function handler(req, res) {
   let modelSlugs = [];
@@ -39,7 +41,7 @@ export default async function handler(req, res) {
   const today = new Date().toISOString().split('T')[0];
 
   const staticUrls = STATIC_PATHS.map(path => urlEntry(SITE_ORIGIN + path, today, path === '/' ? '1.0' : '0.7'));
-  const modelUrls = modelSlugs.map(slug => urlEntry(`${SITE_ORIGIN}/model/${slug}`, today, '0.8'));
+  const modelUrls = modelSlugs.map(slug => urlEntry(`${SITE_ORIGIN}/talent/${slug}`, today, '0.8'));
   const categoryUrls = categorySlugs.map(slug => urlEntry(`${SITE_ORIGIN}/gallery/${slug}`, today, '0.7'));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

@@ -1,4 +1,8 @@
 {
+  "redirects": [
+    { "source": "/models", "destination": "/talents", "permanent": true },
+    { "source": "/model/:slug", "destination": "/talent/:slug", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/index.html" }

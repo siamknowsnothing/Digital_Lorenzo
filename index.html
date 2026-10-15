@@ -185,8 +185,8 @@ body.admin .photo-actions{display:flex;}
 .stat .num{font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--gold);display:block;line-height:1;}
 .stat .lbl{font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:5px;display:block;}
 
-/* ── PHOTOGRAPHERS ── */
-#photographers{background:var(--surface);}
+/* ── PHOTOGRAPHERS (anchor renamed to #creatives — team members, not just photographers) ── */
+#creatives{background:var(--surface);}
 .photographers-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:1px;}
 .photographer-card{flex:0 1 270px;background:var(--surface);padding:36px 32px;display:flex;flex-direction:column;justify-content:space-between;transition:background .3s,border-color .3s;border:1px solid var(--border);}
 .photographer-card:hover{background:var(--surface2);border-color:rgba(200,169,110,.4);}
@@ -249,7 +249,7 @@ body.viewing-model #featured,
 body.viewing-model #gallery-page,
 body.viewing-model #services,
 body.viewing-model #about,
-body.viewing-model #photographers,
+body.viewing-model #creatives,
 body.viewing-model #models,
 body.viewing-model #models-page,
 body.viewing-model #contact{display:none;}
@@ -284,7 +284,7 @@ body.viewing-gallery #hero,
 body.viewing-gallery #featured,
 body.viewing-gallery #services,
 body.viewing-gallery #about,
-body.viewing-gallery #photographers,
+body.viewing-gallery #creatives,
 body.viewing-gallery #models,
 body.viewing-gallery #model-page,
 body.viewing-gallery #contact{display:none;}
@@ -304,7 +304,7 @@ body.viewing-models #featured,
 body.viewing-models #gallery-page,
 body.viewing-models #services,
 body.viewing-models #about,
-body.viewing-models #photographers,
+body.viewing-models #creatives,
 body.viewing-models #models,
 body.viewing-models #model-page,
 body.viewing-models #contact{display:none;}
@@ -642,8 +642,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   <nav id="main-nav" aria-label="Primary">
     <button class="nav-a" data-nav="gallery" onclick="goToGalleryPage(null)">Gallery</button>
     <button class="nav-a" onclick="scrollToSection('#about')">About</button>
-    <button class="nav-a" onclick="scrollToSection('#photographers')">Photographers</button>
-    <button class="nav-a" data-nav="models" onclick="goToModelsPage(null)">Models</button>
+    <button class="nav-a" onclick="scrollToSection('#creatives')">Creatives</button>
+    <button class="nav-a" data-nav="models" onclick="goToModelsPage(null)">Talents</button>
     <button class="nav-a" onclick="scrollToSection('#contact')">Contact</button>
     <button id="admin-btn" onclick="handleAdminClick()">Admin</button>
   </nav>
@@ -656,8 +656,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 <div id="mobile-nav-drawer" role="navigation" aria-label="Mobile">
   <button class="mob-nav-a" onclick="closeMobileNav();goToGalleryPage(null)">Gallery</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#about')">About</button>
-  <button class="mob-nav-a" onclick="mobileNavGo('#photographers')">Photographers</button>
-  <button class="mob-nav-a" onclick="closeMobileNav();goToModelsPage(null)">Models</button>
+  <button class="mob-nav-a" onclick="mobileNavGo('#creatives')">Creatives</button>
+  <button class="mob-nav-a" onclick="closeMobileNav();goToModelsPage(null)">Talents</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#services')">Services</button>
   <button class="mob-nav-a" onclick="mobileNavGo('#contact')">Contact</button>
   <div class="mob-nav-divider"></div>
@@ -718,34 +718,34 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   </div>
 </section>
 
-<!-- ── PHOTOGRAPHERS ── -->
-<section id="photographers" class="reveal">
+<!-- ── CREATIVES (section renamed from Photographers) ── -->
+<section id="creatives" class="reveal">
   <div class="sec-label">Team</div>
-  <h2 class="sec-title">Our <i>Photographers</i></h2>
+  <h2 class="sec-title">Our <i>Creatives</i></h2>
   <div class="photographers-grid" id="photographers-grid">
     <!-- rendered by JS -->
   </div>
   <div style="display:none;margin-top:24px;" id="add-photographer-wrap">
-    <button class="ab-btn hl" onclick="openAddPhotographer()" style="border-color:var(--gold);color:var(--gold);padding:10px 22px;font-size:.72rem;letter-spacing:.12em;">+ Add Photographer</button>
+    <button class="ab-btn hl" onclick="openAddPhotographer()" style="border-color:var(--gold);color:var(--gold);padding:10px 22px;font-size:.72rem;letter-spacing:.12em;">+ Add Creative</button>
   </div>
 </section>
 
-<!-- ── MODELS ── -->
+<!-- ── TALENTS teaser (section renamed from Models) ── -->
 <section id="models" class="reveal">
-  <h2 class="sec-title">Our <i>Models</i></h2>
+  <h2 class="sec-title">Our <i>Talents</i></h2>
   <div style="text-align:center;">
-    <a class="hero-cta" href="/models" onclick="return goToModelsPage(event)">See Our Models</a>
+    <a class="hero-cta" href="/talents" onclick="return goToModelsPage(event)">See Our Talents</a>
   </div>
 </section>
 
-<!-- ── MODELS DIRECTORY PAGE ── -->
+<!-- ── TALENTS DIRECTORY PAGE (renamed from Models) ── -->
 <section id="models-page">
   <button class="mp-back" onclick="exitModelsPage()">← Back to Site</button>
   <div class="sec-label">Talent</div>
-  <h2 class="sec-title">Our <i>Models</i></h2>
+  <h2 class="sec-title">Our <i>Talents</i></h2>
   <div class="model-filter-bar" id="model-filter-bar" style="display:none;">
     <div class="model-search-wrap">
-      <input type="text" id="model-search" placeholder="Search models by name…" oninput="onModelSearchInput()" aria-label="Search models">
+      <input type="text" id="model-search" placeholder="Search talents by name…" oninput="onModelSearchInput()" aria-label="Search talents">
       <button class="model-search-clear" id="model-search-clear" onclick="clearModelSearch()" title="Clear search">✕</button>
     </div>
     <div class="az-filter" id="az-filter"></div>
@@ -755,10 +755,10 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   </div>
   <div class="empty" id="models-empty" style="display:none;">
     <big id="models-empty-icon">🎭</big>
-    <p id="models-empty-text">No models added yet.</p>
+    <p id="models-empty-text">No talents added yet.</p>
   </div>
   <div style="display:none;margin-top:24px;" id="add-model-wrap">
-    <button class="ab-btn hl" onclick="openAddModel()" style="border-color:var(--gold);color:var(--gold);padding:10px 22px;font-size:.72rem;letter-spacing:.12em;">+ Add Model</button>
+    <button class="ab-btn hl" onclick="openAddModel()" style="border-color:var(--gold);color:var(--gold);padding:10px 22px;font-size:.72rem;letter-spacing:.12em;">+ Add Talent</button>
   </div>
 </section>
 
@@ -970,8 +970,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 <div class="overlay" id="m-photographer">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-photographer')">✕</button>
-    <h2 id="pg-modal-title">Add Photographer</h2>
-    <p class="sub">Add a new team member to the Photographers section.</p>
+    <h2 id="pg-modal-title">Add Creative</h2>
+    <p class="sub">Add a new team member to the Creatives section.</p>
     <input type="hidden" id="pg-edit-id">
     <label>Profile Photo</label>
     <div id="pg-photo-up-area" onclick="document.getElementById('pg-photo-file').click()"
@@ -986,7 +986,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
     <label>Name</label>
     <input type="text" id="pg-name" placeholder="Full name">
     <label>Role</label>
-    <input type="text" id="pg-role" placeholder="e.g. Lead Photographer, Second Shooter…">
+    <input type="text" id="pg-role" placeholder="e.g. Lead Creative, Second Shooter…">
     <label>Short Bio</label>
     <textarea id="pg-bio" rows="3" placeholder="Brief description…"></textarea>
     <label>Phone</label>
@@ -1014,7 +1014,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
       <input type="url" id="pg-website" placeholder="https://...">
       <label class="blank-toggle"><input type="checkbox" id="pg-website-blank" onchange="pgToggleBlank('pg-website','pg-website-blank')"><span>Leave blank (hide from card)</span></label>
     </div>
-    <button class="btn-primary" onclick="savePhotographer()">Save Photographer</button>
+    <button class="btn-primary" onclick="savePhotographer()">Save Creative</button>
   </div>
 </div>
 
@@ -1022,8 +1022,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 <div class="overlay" id="m-model">
   <div class="modal">
     <button class="mcl" onclick="closeM('m-model')">✕</button>
-    <h2 id="md-modal-title">Add Model</h2>
-    <p class="sub">Add a new model to the Models section.</p>
+    <h2 id="md-modal-title">Add Talent</h2>
+    <p class="sub">Add a new talent to the Talents section.</p>
     <input type="hidden" id="md-edit-id">
     <label>Profile Photo</label>
     <div id="md-photo-up-area" onclick="document.getElementById('md-photo-file').click()"
@@ -1039,12 +1039,12 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
     <input type="text" id="md-name" placeholder="Full name" onkeyup="mdSuggestSlug()">
     <label>Custom URL Slug (optional)</label>
     <div style="display:flex;align-items:center;gap:0;border:1px solid rgba(200,169,110,.25);background:var(--surface2);">
-      <span style="padding:0 0 0 14px;color:var(--muted);font-size:.82rem;white-space:nowrap;">/model/</span>
+      <span style="padding:0 0 0 14px;color:var(--muted);font-size:.82rem;white-space:nowrap;">/talent/</span>
       <input type="text" id="md-slug" placeholder="auto-generated-from-name" style="border:none;background:none;">
     </div>
-    <small style="display:block;color:var(--muted2);font-size:.72rem;margin:-8px 0 16px;">Leave blank to auto-generate this from the model's name.</small>
+    <small style="display:block;color:var(--muted2);font-size:.72rem;margin:-8px 0 16px;">Leave blank to auto-generate this from the talent's name.</small>
     <label>Role</label>
-    <input type="text" id="md-role" placeholder="e.g. Fashion Model, Print, Runway…">
+    <input type="text" id="md-role" placeholder="e.g. Fashion Talent, Print, Runway…">
     <label>Short Bio</label>
     <textarea id="md-bio" rows="3" placeholder="Brief description…"></textarea>
     <label>Phone</label>
@@ -1072,7 +1072,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
       <input type="url" id="md-website" placeholder="https://...">
       <label class="blank-toggle"><input type="checkbox" id="md-website-blank" onchange="mdToggleBlank('md-website','md-website-blank')"><span>Leave blank (hide from card)</span></label>
     </div>
-    <button class="btn-primary" onclick="saveModel()">Save Model</button>
+    <button class="btn-primary" onclick="saveModel()">Save Talent</button>
   </div>
 </div>
 
@@ -1081,7 +1081,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   <div class="modal">
     <button class="mcl" onclick="closeM('m-model-photo')">✕</button>
     <h2 id="mp-modal-title">Add Gallery Photos</h2>
-    <p class="sub" id="mp-modal-sub">Upload photos to this model's dedicated gallery.</p>
+    <p class="sub" id="mp-modal-sub">Upload photos to this talent's dedicated gallery.</p>
     <input type="hidden" id="mp-model-id">
     <label>Upload Images (select multiple)</label>
     <div class="up-area" id="mp-up-area"
@@ -1873,7 +1873,7 @@ function openAddPhotographer(){
   pgUploadData = null;
   pgUploadFile = null;
   document.getElementById('pg-edit-id').value = '';
-  document.getElementById('pg-modal-title').textContent = 'Add Photographer';
+  document.getElementById('pg-modal-title').textContent = 'Add Creative';
   document.getElementById('pg-name').value = '';
   document.getElementById('pg-role').value = '';
   document.getElementById('pg-bio').value = '';
@@ -1907,7 +1907,7 @@ function openEditPhotographer(id){
   pgUploadData = null;
   pgUploadFile = null;
   document.getElementById('pg-edit-id').value = id;
-  document.getElementById('pg-modal-title').textContent = 'Edit Photographer';
+  document.getElementById('pg-modal-title').textContent = 'Edit Creative';
   document.getElementById('pg-name').value = pg.name||'';
   document.getElementById('pg-role').value = pg.role||'';
   document.getElementById('pg-bio').value = pg.bio||'';
@@ -1970,7 +1970,7 @@ async function savePhotographer(){
   const data = {
     id:       id || null,
     name:     document.getElementById('pg-name').value.trim(),
-    role:     document.getElementById('pg-role').value.trim() || 'Photographer',
+    role:     document.getElementById('pg-role').value.trim() || 'Creative',
     bio:      document.getElementById('pg-bio').value.trim(),
     phone:    pgFieldVal('phone'),
     email:    pgFieldVal('email'),
@@ -2111,21 +2111,21 @@ async function savePhotographer(){
     }
     closeM('m-photographer');
     renderPhotographers();
-    showToast(id ? 'Photographer updated!' : 'Photographer added!');
+    showToast(id ? 'Creative updated!' : 'Creative added!');
   } catch(e){
     showToast('Save failed: '+e.message);
   }
 }
 
 async function deletePhotographer(id){
-  if(!confirm('Remove this photographer?')) return;
+  if(!confirm('Remove this creative?')) return;
   try {
     await deletePhotographerFromFirebase(id);
   } catch(e){ console.warn(e); }
   photographers = photographers.filter(p=>p.id!==id);
   await S.set('photographers', photographers);
   renderPhotographers();
-  showToast('Photographer removed.');
+  showToast('Creative removed.');
 }
 
 /* ══════════════════════════════════════════════
@@ -2249,7 +2249,7 @@ function renderModels(){
           <p class="photographer-bio">${md.bio||''}</p>
           ${links.length ? `<div class="photographer-contact">${links.join('')}</div>` : ''}
           <div style="margin-top:16px;">
-            <a class="pg-action-btn" style="display:inline-block;text-decoration:none;" href="/model/${slug}" onclick="return goToModelPage(event,'${slug}')">View Profile →</a>
+            <a class="pg-action-btn" style="display:inline-block;text-decoration:none;" href="/talent/${slug}" onclick="return goToModelPage(event,'${slug}')">View Profile →</a>
           </div>
           ${adminActions}
         </div>
@@ -2275,7 +2275,7 @@ function openAddModel(){
   mdUploadData = null;
   mdUploadFile = null;
   document.getElementById('md-edit-id').value = '';
-  document.getElementById('md-modal-title').textContent = 'Add Model';
+  document.getElementById('md-modal-title').textContent = 'Add Talent';
   document.getElementById('md-name').value = '';
   document.getElementById('md-slug').value = '';
   document.getElementById('md-role').value = '';
@@ -2308,7 +2308,7 @@ function openEditModel(id){
   mdUploadData = null;
   mdUploadFile = null;
   document.getElementById('md-edit-id').value = id;
-  document.getElementById('md-modal-title').textContent = 'Edit Model';
+  document.getElementById('md-modal-title').textContent = 'Edit Talent';
   document.getElementById('md-name').value = md.name||'';
   document.getElementById('md-slug').value = md.slug||'';
   document.getElementById('md-role').value = md.role||'';
@@ -2369,7 +2369,7 @@ async function saveModel(){
     id:       id || null,
     name:     document.getElementById('md-name').value.trim(),
     slug:     (() => { const raw = document.getElementById('md-slug').value.trim(); return raw ? slugify(raw) : ''; })(),
-    role:     document.getElementById('md-role').value.trim() || 'Model',
+    role:     document.getElementById('md-role').value.trim() || 'Talent',
     bio:      document.getElementById('md-bio').value.trim(),
     phone:    mdFieldVal('phone'),
     email:    mdFieldVal('email'),
@@ -2436,14 +2436,14 @@ async function saveModel(){
     }
     closeM('m-model');
     renderModels();
-    showToast(id ? 'Model updated!' : 'Model added!');
+    showToast(id ? 'Talent updated!' : 'Talent added!');
   } catch(e){
     showToast('Save failed: '+e.message);
   }
 }
 
 async function deleteModel(id){
-  if(!confirm('Remove this model?')) return;
+  if(!confirm('Remove this talent?')) return;
   try {
     await deleteModelFromFirebase(id);
   } catch(e){ console.warn(e); }
@@ -2451,7 +2451,7 @@ async function deleteModel(id){
   models = models.filter(p=>p.id!==id);
   await S.set('models', models);
   renderModels();
-  showToast('Model removed.');
+  showToast('Talent removed.');
   // If the deleted model's page is currently open, go home
   if(wasViewingThisModel) exitModelPage();
 }
@@ -2533,7 +2533,7 @@ function slugify(name){
     .replace(/[^a-z0-9\s-]/g,'')
     .replace(/\s+/g,'-')
     .replace(/-+/g,'-')
-    .replace(/^-|-$/g,'') || 'model';
+    .replace(/^-|-$/g,'') || 'talent';
 }
 
 // Returns the URL slug to actually use for a given model: their custom
@@ -2552,7 +2552,7 @@ function mdSuggestSlug(){
 }
 
 function getRouteModelSlug(){
-  const m = location.pathname.match(/^\/model\/([^/]+)\/?$/i);
+  const m = location.pathname.match(/^\/(?:talent|model)\/([^/]+)\/?$/i);
   return m ? decodeURIComponent(m[1]) : null;
 }
 
@@ -2567,8 +2567,8 @@ function goToModelPage(e, slug){
 }
 
 function navigateToModel(slug){
-  if(location.pathname !== '/model/'+slug){
-    history.pushState({model:slug}, '', '/model/'+slug);
+  if(location.pathname !== '/talent/'+slug){
+    history.pushState({model:slug}, '', '/talent/'+slug);
   }
   renderModelRoute(slug);
   window.scrollTo(0,0);
@@ -2607,12 +2607,13 @@ window.addEventListener('popstate', () => {
    ══════════════════════════════════════════════════════ */
 
 function getRouteModelsHome(){
-  return location.pathname === '/models' || location.pathname === '/models/';
+  return location.pathname === '/talents' || location.pathname === '/talents/'
+      || location.pathname === '/models'  || location.pathname === '/models/';
 }
 
 function navigateToModelsPage(){
-  if(location.pathname !== '/models'){
-    history.pushState({models:true}, '', '/models');
+  if(location.pathname !== '/talents'){
+    history.pushState({models:true}, '', '/talents');
   }
   renderModelsRoute();
   window.scrollTo(0,0);
@@ -2641,9 +2642,9 @@ function exitModelsPage(){
 
 function renderModelsRoute(){
   document.body.classList.add('viewing-models');
-  document.title = `Our Models | ${settings.logo||'Studio Lorenzo'}`;
+  document.title = `Our Talents | ${settings.logo||'Studio Lorenzo'}`;
   const metaDesc = document.querySelector('meta[name="description"]');
-  if(metaDesc) metaDesc.setAttribute('content', `Meet the models represented by ${settings.logo||'Studio Lorenzo'}.`);
+  if(metaDesc) metaDesc.setAttribute('content', `Meet the talents represented by ${settings.logo||'Studio Lorenzo'}.`);
   renderModels();
 }
 
@@ -2761,7 +2762,7 @@ async function renderModelRoute(slug){
     // models may not have finished loading yet on a hard refresh —
     // render a soft "loading" state; init() re-calls this once loaded.
     document.getElementById('model-page-inner').innerHTML = models.length
-      ? `<div class="mp-notfound"><h2>Model Not Found</h2><p>We couldn't find a profile at this address.</p><button class="hero-cta" onclick="exitModelPage()" style="cursor:none;">← Back to Site</button></div>`
+      ? `<div class="mp-notfound"><h2>Talent Not Found</h2><p>We couldn't find a profile at this address.</p><button class="hero-cta" onclick="exitModelPage()" style="cursor:none;">← Back to Site</button></div>`
       : `<div class="mp-notfound"><h2>Loading…</h2></div>`;
     return;
   }
@@ -2771,9 +2772,9 @@ async function renderModelRoute(slug){
 }
 
 function renderModelPage(md){
-  document.title = `${md.name} | ${settings.logo||'Studio Lorenzo'} Models`;
+  document.title = `${md.name} | ${settings.logo||'Studio Lorenzo'} Talents`;
   const metaDesc = document.querySelector('meta[name="description"]');
-  const descText = (md.bio || `${md.name} — ${md.role||'Model'} represented by ${settings.logo||'Studio Lorenzo'}.`).slice(0,160);
+  const descText = (md.bio || `${md.name} — ${md.role||'Talent'} represented by ${settings.logo||'Studio Lorenzo'}.`).slice(0,160);
   if(metaDesc) metaDesc.setAttribute('content', descText);
 
   const photoHtml = md.photo
@@ -2793,7 +2794,7 @@ function renderModelPage(md){
     <div class="mp-hero">
       <div class="mp-photo-frame">${photoHtml}</div>
       <div>
-        <div class="mp-role">${md.role||'Model'}</div>
+        <div class="mp-role">${md.role||'Talent'}</div>
         <h1 class="mp-name">${md.name}</h1>
         ${md.bio ? `<p class="mp-bio">${md.bio}</p>` : ''}
         ${links.length ? `<div class="mp-contact">${links.join('')}</div>` : ''}
@@ -2845,8 +2846,8 @@ function renderModelGalleryGrid(){
   }
   grid.innerHTML = `<div class="masonry" ${isAdmin ? `data-reorder-list="model_photos"` : ''}>
     ${modelGallery.map((p,i)=>`
-      <div class="photo-item" role="button" tabindex="0" aria-label="View photo ${i+1} of ${(currentModelObj?.name||'model').replace(/"/g,'&quot;')}" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openModelLb(${i})">
-        <img src="${p.thumb||p.url}" alt="${(p.title||((currentModelObj?.name||'Model')+' portfolio photograph')).replace(/"/g,'&quot;')}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
+      <div class="photo-item" role="button" tabindex="0" aria-label="View photo ${i+1} of ${(currentModelObj?.name||'talent').replace(/"/g,'&quot;')}" data-reorder-id="${p.id}" draggable="${isAdmin}" onclick="openModelLb(${i})">
+        <img src="${p.thumb||p.url}" alt="${(p.title||((currentModelObj?.name||'Talent')+' portfolio photograph')).replace(/"/g,'&quot;')}" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('img-ready')" onerror="if(this.src!=='${p.url}'){this.src='${p.url}';}else{this.parentElement.style.display='none';}">
         <div class="photo-overlay">
           <div class="photo-title">${p.title||''}</div>
         </div>
@@ -2908,7 +2909,7 @@ function removeMpUpload(i){ mpUploadQueue.splice(i,1); renderMpThumbs(); }
 
 async function saveModelPhotos(){
   const modelId = document.getElementById('mp-model-id').value;
-  if(!modelId){ showToast('Missing model.'); return; }
+  if(!modelId){ showToast('Missing talent.'); return; }
   if(!mpUploadQueue.length){ showToast('Please select at least one image.'); return; }
 
   showToast(`Uploading ${mpUploadQueue.length} photo${mpUploadQueue.length>1?'s':''}…`);
@@ -3586,7 +3587,7 @@ async function loadPhotographersFromFirebase(){
     photographers = rest.map(r=>({
       id:       r.id,
       name:     r.name     || '',
-      role:     r.role     || 'Photographer',
+      role:     r.role     || 'Creative',
       bio:      r.bio      || '',
       photo:    r.photo_url || localPhotoCache[String(r.id)] || '',
       phone:    r.phone    || '',
@@ -3650,7 +3651,7 @@ async function loadModelsFromFirebase(){
       id:       r.id,
       name:     r.name     || '',
       slug:     r.slug     || '',
-      role:     r.role     || 'Model',
+      role:     r.role     || 'Talent',
       bio:      r.bio      || '',
       photo:    r.photo_url || localPhotoCache[String(r.id)] || '',
       phone:    r.phone    || '',
@@ -4136,8 +4137,35 @@ async function ensureCategoryRegistered(catName){
   await saveCustomServicesToFirebase();
 }
 
+/* ── LEGACY URL NORMALIZATION ──
+   /model/<slug> and /models were renamed to /talent/<slug> and /talents;
+   the #photographers anchor was renamed to #creatives. Old links/bookmarks
+   still resolve (the router/CSS above accept both forms) — this just
+   rewrites the address bar to the new canonical form via replaceState so
+   it doesn't silently keep serving the old URL forever. */
+let _legacyPhotographersHash = false; // set below; consumed once Creatives has its real data/layout
+function normalizeLegacyUrl(){
+  const path = location.pathname;
+  const modelMatch = path.match(/^\/model\/([^/]+)\/?$/i);
+  let newPath = null;
+  if(modelMatch) newPath = '/talent/' + modelMatch[1];
+  else if(path === '/models' || path === '/models/') newPath = '/talents';
+  if(newPath && newPath !== path){
+    history.replaceState(history.state, '', newPath + location.search + location.hash);
+  }
+  if(location.hash === '#photographers'){
+    history.replaceState(history.state, '', location.pathname + location.search + '#creatives');
+    // Don't scroll yet — the Creatives grid hasn't loaded its real data/
+    // photos yet, so its height (and therefore scroll position) isn't
+    // final. Scrolled for real once loadPhotographersFromFirebase() below
+    // has rendered the actual cards.
+    _legacyPhotographersHash = true;
+  }
+}
+
 /* ── INIT ── */
 async function init(){
+  normalizeLegacyUrl();
   photos        = await S.get('photos', []);
   const savedBio = await S.get('bio', {...defaultBio});
   // Merge with defaults so no field is ever missing
@@ -4208,6 +4236,12 @@ async function init(){
     await loadPhotosFromFirebase();
   }
   await loadPhotographersFromFirebase();
+  if(_legacyPhotographersHash){
+    _legacyPhotographersHash = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.getElementById('creatives')?.scrollIntoView();
+    }));
+  }
   await loadModelsFromFirebase();
   await loadBioFromFirebase();
   // Now that photos/models are loaded from Firebase, resolve the
