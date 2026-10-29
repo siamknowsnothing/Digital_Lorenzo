@@ -1374,6 +1374,13 @@ let photos   = [];
 let bio      = {...defaultBio};
 let settings = {logo:'Studio Lorenzo',heroTitle:'Through Every|Lens & Light',heroSub:'Photography that captures the soul of every moment — from sweeping landscapes to intimate portraits.',cSub:'Available for commissions, collaborations, and exhibitions.'};
 let customServices = []; // [{name, icon, desc}] — user-defined extras beyond defaults
+// Firestore-synced list of EVERY gallery category that currently has at
+// least one photo, in display order — see loadGalleryCategoriesFromFirebase
+// / syncGalleryCategories() near the bottom of this file. A visitor only
+// ever loads a paginated subset of `photos`, so the categories visible in
+// that subset alone are incomplete; this list fills in the rest. Admin
+// (which always has the full photo set loaded) is the only writer.
+let savedGalleryCategories = [];
 let photographers = []; // [{id, name, role, bio, photo, phone, email, facebook, ig, website}]
 let pgUploadData = null;
 let isAdmin  = false;
@@ -1414,12 +1421,18 @@ function getCats(){
   const fromPhotos=[...new Set(photos.map(p=>p.category).filter(Boolean))];
   // also include any custom service names (even if no photos yet)
   const fromServices = customServices.map(s=>s.name);
-  const merged = [...new Set([...fromPhotos,...fromServices])];
-  // If nothing at all, show defaults
-  if(!merged.length) return [...DEFAULT_CATS];
   // also include defaults that have photos
-  const allWithPhotos = [...new Set([...fromPhotos,...DEFAULT_CATS.filter(c=>fromPhotos.includes(c)),...fromServices])];
-  return allWithPhotos.length ? allWithPhotos : [...DEFAULT_CATS];
+  const fromLoadedData = [...new Set([...fromPhotos,...DEFAULT_CATS.filter(c=>fromPhotos.includes(c)),...fromServices])];
+  // Merge in the Firestore-synced full category list (every category that
+  // has at least one photo ANYWHERE, not just on whichever page is
+  // currently loaded) — in its saved order first, then anything found
+  // only locally (a very fresh upload, or before the sync list has ever
+  // been written) appended at the end. Without this merge, a visitor who
+  // has only loaded the first page of photos only ever sees categories
+  // whose photos happened to land on that page — see
+  // loadGalleryCategoriesFromFirebase()/syncGalleryCategories() below.
+  const merged = [...new Set([...savedGalleryCategories, ...fromLoadedData])];
+  return merged.length ? merged : [...DEFAULT_CATS];
 }
 
 function getAllServiceCats(){
@@ -3232,6 +3245,7 @@ async function savePhotos(){
 
       if(cat) await ensureCategoryRegistered(cat); // in case the edit introduced a new category
       photos[idx] = { ...photos[idx], url: newUrl, thumb: newUrl, category: cat||photos[idx].category, title: title||photos[idx].title };
+      if(cat) await syncGalleryCategories(); // the edit may have changed, or emptied, a category
     }
     closeM('m-photo'); renderAll(); showToast('Photo updated!'); return;
   }
@@ -3313,6 +3327,7 @@ async function delPhoto(id){
   const { error } = await window._db.from('photos').delete().eq('id', id);
   if(error){ showToast('Delete failed: '+error.message); return; }
   photos = photos.filter(p=>p.id!==id);
+  await syncGalleryCategories(); // may have removed the last photo in a category
   renderAll(); showToast('Photo deleted.');
 }
 
@@ -3434,13 +3449,14 @@ function addCat(){
   renderAll();
   showToast(`"${name}" category added!`);
 }
-function deleteCat(cat){
+async function deleteCat(cat){
   if(!confirm(`Delete all photos in "${cat}" and remove this category?`)) return;
   photos = photos.filter(p=>p.category!==cat);
   customServices = customServices.filter(s=>s.name!==cat);
   S.set('photos',photos);
   S.set('customServices',customServices);
   saveCustomServicesToFirebase();
+  await syncGalleryCategories(); // the category now has zero photos — drop it from the public tab list
   renderCatsBody();
   renderAll();
   showToast(`"${cat}" removed.`);
@@ -4069,6 +4085,7 @@ async function loadAllPhotosForAdmin(){
   featuredList = photos.filter(p=>p.pinned).sort((a,b)=>(a.order??0)-(b.order??0));
 
   await optimizeGalleryDataOnce();
+  await syncGalleryCategories();
 
   currentCat = 'all';
   renderAll();
@@ -4161,14 +4178,20 @@ async function loadBioFromFirebase(){
   } catch(e){ console.warn('loadBioFromFirebase:', e); }
 }
 
-// customServices drives the "What I Shoot" section AND (unioned with
-// whatever's in the currently-loaded photos) the gallery's category tabs.
-// It used to be saved with S.set() only — localStorage, meaning it only
-// ever existed in whichever browser the admin happened to use, never
-// actually reaching real visitors. Syncing it to Firestore (same small
-// site_config pattern as bio) fixes that, and is what makes it safe to
-// paginate the main photos collection below: category tabs stay complete
-// for every visitor even though we're no longer loading every photo.
+// customServices drives the "What I Shoot" section, and (unioned with
+// whatever's in the currently-loaded photos) is ONE input into the
+// gallery's category tabs — but on its own it is NOT sufficient to keep
+// those tabs complete for a paginated visitor: a category only lands in
+// customServices when a photo is uploaded/edited into it via
+// ensureCategoryRegistered() (or the one-time admin backfill), so any
+// category whose photos simply didn't happen to load on a visitor's
+// current page is still missing. See savedGalleryCategories /
+// loadGalleryCategoriesFromFirebase() / syncGalleryCategories() below for
+// the mechanism that actually closes that gap. It used to be saved with
+// S.set() only — localStorage, meaning it only ever existed in whichever
+// browser the admin happened to use, never actually reaching real
+// visitors. Syncing it to Firestore (same small site_config pattern as
+// bio) fixes that part.
 async function saveCustomServicesToFirebase(){
   try {
     await window._db.from('site_config').upsert({ key: 'services', value: JSON.stringify(customServices) }, { onConflict: 'key' });
@@ -4198,6 +4221,55 @@ async function ensureCategoryRegistered(catName){
   customServices.push({ name: catName, icon:'📷', desc:'Professional photography with a distinctive creative perspective.' });
   await S.set('customServices', customServices);
   await saveCustomServicesToFirebase();
+}
+
+/* ── GALLERY CATEGORIES (the full, pagination-proof tab list) ──
+   Deliberately a separate Firestore doc from `services` (customServices),
+   not a reuse of it: customServices also carries icon/desc for "What I
+   Shoot" and is populated through ensureCategoryRegistered()'s
+   DEFAULT_CATS-skipping "already known" check (correct for THAT list —
+   it stops default categories like "Fashion" from getting a redundant
+   generic 📷/description entry that would shadow their real icon/desc
+   from DEFAULT_SVC_META). This list has a different job: a plain,
+   ordered array of every category name that currently has at least one
+   real photo, full stop, with no such filtering — a default category
+   with real photos belongs in it exactly as much as a custom one. */
+async function loadGalleryCategoriesFromFirebase(){
+  try {
+    const { data, error } = await window._db.from('site_config').select('value').eq('key','gallery_categories').single();
+    if(error || !data) return;
+    const list = JSON.parse(data.value);
+    if(!Array.isArray(list)) return;
+    savedGalleryCategories = list;
+    await S.set('galleryCategories', list);
+    // Tabs may already be on screen from cached/partial data (the gallery
+    // page renders immediately from whatever's cached) — refresh them now
+    // that the authoritative full list has arrived.
+    renderGallery();
+  } catch(e){ console.warn('loadGalleryCategoriesFromFirebase:', e); }
+}
+async function saveGalleryCategoriesToFirebase(list){
+  try {
+    await window._db.from('site_config').upsert({ key: 'gallery_categories', value: JSON.stringify(list) }, { onConflict: 'key' });
+  } catch(e){ console.warn('saveGalleryCategoriesToFirebase:', e); }
+}
+// Admin-only: recomputes the full category list from every currently
+// loaded photo (admin always has the complete set — see
+// loadAllPhotosForAdmin) and writes it to Firestore only when it actually
+// differs from what's already saved, so this is a no-op write on every
+// normal admin page load. Call after anything that can change which
+// categories have at least one photo: the admin's full photo load itself,
+// a photo's category being edited, a photo being deleted, or a category
+// (and its photos) being deleted. Photo uploads already go through
+// loadAllPhotosForAdmin() afterwards (see savePhotos()'s ADD MODE
+// branch), so they're covered without a separate call.
+async function syncGalleryCategories(){
+  if(!isAdmin) return;
+  const list = [...new Set(photos.map(p=>p.category).filter(Boolean))];
+  if(JSON.stringify(list) === JSON.stringify(savedGalleryCategories)) return;
+  savedGalleryCategories = list;
+  await S.set('galleryCategories', list);
+  await saveGalleryCategoriesToFirebase(list);
 }
 
 /* ── LEGACY URL NORMALIZATION ──
@@ -4238,6 +4310,7 @@ async function init(){
   if(savedBioPhoto) bio.photo = savedBioPhoto;
   settings      = await S.get('settings', {logo:'Studio Lorenzo',heroTitle:'Through Every|Lens & Light',heroSub:'Photography that captures the soul of every moment — from sweeping landscapes to intimate portraits.',cSub:'Available for commissions, collaborations, and exhibitions.'});
   customServices= await S.get('customServices', []);
+  savedGalleryCategories = await S.get('galleryCategories', []);
   photographers = await S.get('photographers', []);
   models        = await S.get('models', []);
 
@@ -4303,6 +4376,10 @@ async function init(){
   }
 
   await loadCustomServicesFromFirebase();
+  // Loaded before directCatName below is resolved, so a deep link to a
+  // category whose photos aren't on the first page still matches on the
+  // very first attempt, not just after a later re-render.
+  await loadGalleryCategoriesFromFirebase();
 
   // Resolve which category (if any) this load should fetch, so a direct
   // link to /gallery/<category> fetches THAT category's first page
