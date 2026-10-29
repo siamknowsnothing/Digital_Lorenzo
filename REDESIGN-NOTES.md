@@ -245,3 +245,21 @@ Playwright (Chromium), 390×844 viewport. Routes tested directly (hard-refresh /
 
 ### Commit
 Committed on `redesign`: guard Firebase/Firestore init and the auth-state listener against init failure so a shared talent/gallery link can't get stuck on "Loading…" forever; add a Retry state for that case; make talent/gallery slug matching case-insensitive; guard the cookie notice's localStorage access.
+
+---
+
+## Part B: gallery category tabs — wrap instead of scroll on mobile
+
+`.cat-tabs` (the Gallery page's category tab strip: All Work / Runway / Jewelry / Wedding / Editorial / ICM / Advertising / Product / Industrial) used `overflow-x:auto` with `white-space:nowrap` tabs — a horizontal-scroll strip, same pattern on every breakpoint including mobile, so reaching "Industrial" meant a sideways swipe with no visual hint more categories existed off-screen.
+
+**Fix**: inside the existing `@media(max-width:640px)` block in `index.html`, added `.cat-tabs{flex-wrap:wrap;overflow-x:visible;row-gap:4px;}` and `min-height:44px` on `.cat-tab` (alongside its existing mobile padding/font-size rule). Desktop (`.cat-tabs` base rule, ~line 140) is untouched — still a horizontal scroll strip there, which is fine since all 9 tabs already fit without scrolling at 1024px+ anyway. No JS changes needed — nothing in the codebase auto-scrolls the active tab horizontally into view, so switching to wrap doesn't break any existing behavior.
+
+**Other overflow-x rows checked, per the brief's ask to check them the same way:**
+- **`.az-filter`** (A-Z talent filter on `/talents`) — already `flex-wrap:wrap`, not `overflow-x`. No horizontal overflow at any width; confirmed again this pass (390px: `scrollWidth === clientWidth`). No change needed. (Its 28×28px buttons at ≤640px are below a 44px tap target, but that's a separate, pre-existing touch-target sizing question, not an overflow/scrolling bug — left for the Part C touch-target pass below rather than mixed into this fix.)
+- **`#admin-bar`** — the only other `overflow-x:auto` row in the file. It's the admin-only toolbar (`isAdmin`-gated, invisible to every public visitor) — intentionally left as a horizontal scroll strip; not a public mobile-UX concern, and not touched per the standing "no admin panel changes without being asked" rule.
+
+### Testing
+Playwright (Chromium), `/gallery`. At 390×844: `cat-tabs` wraps across 4 rows, zero horizontal overflow (`scrollWidth === clientWidth`), every tab's rendered height is exactly 44px (screenshot: `gallery-tabs-390.png`, saved alongside this file's other screenshots at the workspace root). At 1024×900: `cat-tabs` stays `flex-wrap:nowrap` / `overflow-x:auto`, single row — desktop behavior unchanged, confirmed via computed style. `/talents`' A-Z filter re-checked at 390px: no overflow.
+
+### Commit
+Committed on `redesign`: wrap gallery category tabs onto multiple rows at ≤640px with 44px tap targets; desktop unchanged.

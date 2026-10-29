@@ -562,8 +562,12 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   section{padding:60px 18px;}
   .sec-title{margin-bottom:32px;}
 
-  /* gallery tabs */
-  .cat-tab{padding:14px 16px;font-size:.68rem;letter-spacing:.1em;}
+  /* gallery tabs — wrap onto multiple rows instead of scrolling
+     sideways, so every category is reachable without a horizontal
+     swipe; desktop (.cat-tabs at line ~140) keeps the scrolling strip
+     unchanged. */
+  .cat-tabs{flex-wrap:wrap;overflow-x:visible;row-gap:4px;}
+  .cat-tab{padding:14px 16px;font-size:.68rem;letter-spacing:.1em;min-height:44px;}
   .photo-item{margin-bottom:10px;}
   .pa-btn{width:36px;height:36px;font-size:.85rem;}
 
