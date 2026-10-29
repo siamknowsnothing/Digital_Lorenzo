@@ -263,3 +263,44 @@ Playwright (Chromium), `/gallery`. At 390×844: `cat-tabs` wraps across 4 rows, 
 
 ### Commit
 Committed on `redesign`: wrap gallery category tabs onto multiple rows at ≤640px with 44px tap targets; desktop unchanged.
+
+---
+
+## Part C: site-wide polish pass
+
+Skills applied: `design-taste-frontend` was loaded in full (DESIGN_VARIANCE 7 / MOTION_INTENSITY 5 / VISUAL_DENSITY 4, redesign-preserve mode) and used as the reference standard for this pass — most of its rules target greenfield React/Tailwind builds and don't map onto this vanilla HTML/CSS single-file site, but its concrete, framework-agnostic rules (touch-target minimums, contrast checks, eyebrow restraint, CTA-intent clarity, focus states) were applied directly. Per the project's own CLAUDE.md ("do not invoke every installed skill unnecessarily"), `web-design-guidelines` and `emil-design-eng` were not loaded as separate large skill docs on top of that — their well-established principles (spacing rhythm, hover/press feedback, loading/empty states, focus visibility) were instead checked for directly against the live site with Playwright, which is a more direct verification than re-deriving the same checklist from another doc. Scope: Home, `/gallery`, `/talents`, `/talent/<slug>`, `privacy.html`, footer, cookie notice, at 360 / 390 / 768 / 1024 / 1440. Chromium only (same single-engine limitation as every other Playwright pass in this file).
+
+Given two prior overnight sessions already did substantial, well-documented polish work on this site (Featured cap, bio clamps, eyebrow reduction, nav indicators, hero rebalance, hero gap fix, hero headline size, font-loading race fix, the Talents/Creatives rename) — all still in place and re-verified working during this pass — this pass focused on what hadn't been covered yet: the two breakpoints no prior session tested (**360px and 768px**), and a fresh touch-target/contrast/focus sweep.
+
+### Real bug found and fixed: header nav overflow at tablet width (641-900px)
+
+At 768px, the full desktop nav (Gallery / About / Creatives / Talents / Contact + Admin button) was still showing — it only switched to the hamburger menu at `max-width:640px`. Six nav items plus the Admin button don't comfortably fit beside the "Studio Lorenzo" logo in that range, and the logo wrapped onto two lines ("Studio" / "Lorenzo"), reading as a layout bug rather than a deliberate two-line treatment. Confirmed via screenshot at 768px before the fix.
+
+**Fix**: moved the nav/hamburger switch from the `@media(max-width:640px)` block into the existing `@media(max-width:900px)` tablet block (the mobile nav drawer is already a full-screen overlay, not phone-width-specific, so this is safe at tablet width too), and removed the now-redundant duplicate rule from the 640px block. Verified: at 768px the logo now stays on one line and the hamburger opens/closes the mobile nav drawer correctly (tested via an actual click, not just a CSS check); at 1024px and 1440px the desktop nav is completely unaffected (`display:flex`, nav width ~579px at 1024px, comfortably fits).
+
+*(Note on method: an early screenshot at 768px appeared to show the hero headline/subtext/CTAs completely missing below the header. Re-checked via `getBoundingClientRect()` immediately after and found the element fully present and visible — the screenshot had simply been taken before the hero's entrance fade-in animation finished. A second screenshot a moment later showed it correctly. Logged here so this doesn't get mistaken for a second bug; it was a testing-timing artifact, not a site issue, and is the same category of false positive both prior sessions already ran into and documented with full-page screenshots.)*
+
+### Real fix: touch targets below the 44px minimum
+
+- **`.az-btn`** (A-Z talent filter buttons on `/talents`): 28×28px on mobile. Bumped to 44×44px (the "All" pill's padding bumped proportionally, 12px→14px). Re-checked the filter bar still wraps cleanly with no overflow at 44px.
+- **`#hamburger`** (the mobile nav trigger — the single most-tapped element on every narrow-viewport page load): rendered at 34×26.5px despite its visual icon being smaller, because the hit area was only as big as the icon plus 6px padding. Added `min-width:44px;min-height:44px` and `align-items:center` (needed so the icon stays centered as the button's hit area grows past its visual size, since the spans have an explicit width that would otherwise left-align under the default flex `stretch` behavior). Verified rendered size is now exactly 44×44px and the icon stays visually centered (screenshot: `header-360.png`).
+
+### Checked and confirmed already solid (no change needed)
+- **Contrast**: computed WCAG relative-luminance contrast ratios directly from the site's actual CSS custom properties against the `#080808` background — muted text (`#8c8c8c`) ≈ 5.96:1, gold accent (`#c8a96e`) ≈ 8.92:1, primary text (`#ece8e1`) far higher still. All comfortably clear AA (4.5:1) for normal text.
+- **Keyboard focus rings**: tabbed from page load, confirmed the "Skip to content" link receives a visible `2px solid` gold outline with `3px` offset — the sitewide `:focus-visible` rule (covers links, buttons, photo items, category tabs) is real and working, not just declared in CSS.
+- **No horizontal overflow anywhere**: re-verified programmatically (`scrollWidth > innerWidth`) across all of 360 / 390 / 768 / 1024 / 1440 on Home, `/gallery`, `/talents`, and `/talent/naila-nayem` — 20 combinations, zero overflow, zero console errors, in one pass after all fixes above.
+- **Hover/press feedback**: already sitewide via one shared rule (`:active{transform:scale(.97)}` on every interactive class: CTAs, nav links, category tabs, A-Z buttons, share/contact links) — consistent, not something this pass needed to add.
+- **Image loading / layout stability**: the `opacity:0` → `.loaded`/`.img-ready` pattern (CLAUDE.md's own documented gotcha) is applied consistently across every photo grid template (gallery masonry, featured grid, model/talent gallery) — re-confirmed by grep, not just trusted from the doc.
+- **Privacy page**: re-read at 768px (full-page screenshot) — clean hierarchy, one restrained "Legal" eyebrow, good spacing, "Last updated: October 2026" (correctly not stale). No issues found.
+- **Page-height at 360px looking alarming in a thumbnail**: a full-page screenshot of Home at 360px rendered at ~11,000px tall with what looked like large dead gray blocks. Measured every section directly (`getBoundingClientRect` on each grid's children) before assuming a bug: Featured (9 real photos), Services (17 real service cards), Photographers (6 cards at a uniform, correctly-clamped 423px each) — all individually reasonably sized; the total height is just real content genuinely stacking in a single column at 360px, and the "gray blocks" were dark photography compressing into near-invisible blocks in a heavily downscaled thumbnail. Not a layout bug. (Same false-positive class as two things both prior sessions already caught and documented with full-page screenshots — noting the pattern explicitly here since it's now recurred a third time.)
+
+### Not touched (correctly out of scope)
+- `#admin-bar`'s horizontal scroll strip and `.pa-btn` (photo edit/pin/delete) touch targets: admin-only UI, gated behind `isAdmin`, never seen by a public visitor, and the standing rule here is desktop-mouse admin / no admin panel changes without being asked.
+- Hero copy's em-dash ("Photography that captures the soul of every moment — from sweeping landscapes...") and other existing marketing copy: pre-existing brand voice, not rewritten — the brief says preserve copy, don't rebrand, and the design-taste-frontend skill's em-dash rule is for copy this session *generates*, not a license to silently edit the client's existing brand copy during a polish pass.
+- 17 "What I Shoot" service cards and 5 services sharing an identical placeholder description: already flagged as a live-data issue in the Home section's notes above (two sessions ago) — unchanged, still a content/admin-panel matter, not a code bug.
+
+### Testing
+Playwright (Chromium). Breakpoints: 360, 390, 768, 1024, 1440. Pages: Home, `/gallery`, `/talents`, `/talent/naila-nayem`, `privacy.html` (via the non-SPA `serve` instance on port 3001, to avoid the documented `serve -s` artifact). Checked at each: horizontal overflow, console errors, and (for the header fix specifically) computed nav/hamburger display state and an actual click-through of the mobile drawer at 768px. Final regression sweep: 5 widths × 4 pages = 20 combinations, 0 console errors, 0 horizontal-overflow cases, run in a single pass after every fix in this section was applied.
+
+### Commit
+Committed on `redesign`: fix header nav/logo overflow at tablet width (641-900px) by extending the hamburger-nav breakpoint; bump `.az-btn` and `#hamburger` to 44px minimum touch targets.

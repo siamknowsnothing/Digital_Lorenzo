@@ -506,7 +506,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 }
 
 /* ── HAMBURGER MENU ── */
-#hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;padding:6px;cursor:none;z-index:300;}
+#hamburger{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;background:none;border:none;padding:6px;min-width:44px;min-height:44px;cursor:none;z-index:300;}
 #hamburger span{display:block;width:22px;height:1.5px;background:var(--text);transition:transform .3s var(--ease),opacity .3s;}
 #hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
 #hamburger.open span:nth-child(2){opacity:0;}
@@ -529,6 +529,15 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 
 /* ── TABLET (max 900px) ── */
 @media(max-width:900px){
+  /* The full desktop nav (5 links + Admin button) no longer fits beside
+     the "Studio Lorenzo" logo once the header narrows below ~900px —
+     it was previously only hidden at <=640px, so in the 641-900px
+     tablet range the logo wrapped onto two lines ("Studio" / "Lorenzo")
+     fighting for space with the nav. Switching to the hamburger here
+     instead (the drawer itself is already a full-screen overlay, not
+     phone-width-specific, so this is safe at tablet width too). */
+  #main-nav{display:none;}
+  #hamburger{display:flex;}
   header{padding:16px 28px;}
   section{padding:80px 28px;}
   #hero{padding:0 28px 72px;}
@@ -545,10 +554,10 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
   body{cursor:auto;}
   a,button,[onclick]{cursor:pointer;}
 
-  /* header */
+  /* header — nav/hamburger switch now lives in the 900px tablet block
+     above, since it applies from there down; just the tighter phone
+     padding is added here. */
   header{padding:14px 18px;}
-  #main-nav{display:none;}
-  #hamburger{display:flex;}
 
   /* hero */
   #hero{padding:0 18px 64px;min-height:100svh;}
@@ -582,8 +591,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:1
 
   /* models search / A-Z filter */
   .model-search-wrap{max-width:none;}
-  .az-btn{width:28px;height:28px;font-size:.65rem;}
-  .az-btn:first-child{width:auto;padding:0 12px;}
+  .az-btn{width:44px;height:44px;font-size:.68rem;}
+  .az-btn:first-child{width:auto;padding:0 14px;}
 
   /* services */
   .services-grid{grid-template-columns:1fr 1fr;}
