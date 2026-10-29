@@ -1139,10 +1139,23 @@ const firebaseConfig = {
   appId: "1:451054766981:web:388c008c384304f0d8d2ec",
   measurementId: "G-QCPCGWHHVQ"
 };
-firebase.initializeApp(firebaseConfig);
-const _firestore = firebase.firestore();
-const _fbStorage = firebase.storage();
-const _auth = firebase.auth();
+// Guarded: if the Firebase SDK scripts above failed to load (blocked by a
+// restrictive network/firewall, an ad/privacy blocker, or a dropped
+// connection on mobile data), `firebase` is undefined and this would
+// otherwise throw here, uncaught, before window._db ever gets defined
+// below — every data-loading function that depends on it already catches
+// its own errors, so declaring these as `let` (left undefined on failure)
+// instead of letting the ReferenceError propagate keeps the rest of the
+// app's init() sequence from being skipped entirely.
+let _firestore, _fbStorage, _auth;
+try {
+  firebase.initializeApp(firebaseConfig);
+  _firestore = firebase.firestore();
+  _fbStorage = firebase.storage();
+  _auth = firebase.auth();
+} catch(e){
+  console.error('Firebase failed to initialize — site will run with cached/default content only:', e);
+}
 
 /*
   COMPATIBILITY SHIM
@@ -2132,6 +2145,14 @@ async function deletePhotographer(id){
    MODELS — mirrors the Photographers CRUD above
    ══════════════════════════════════════════════ */
 let models = []; // [{id, name, role, bio, photo, phone, email, facebook, ig, website}]
+// Set once loadModelsFromFirebase() has run to completion (success OR
+// failure). Lets renderModelRoute() tell "haven't fetched yet, keep
+// showing Loading…" apart from "fetched and this slug truly doesn't
+// exist" — without it, a permanent Firestore failure (blocked network,
+// Firebase outage) leaves a shared /talent/<slug> link stuck on the
+// Loading… placeholder forever, which looks exactly like "the site
+// doesn't open" from a visitor's side.
+let _modelsLoadAttempted = false;
 let modelSearchQuery = '';
 let modelLetterFilter = 'ALL';
 
@@ -2553,7 +2574,15 @@ function mdSuggestSlug(){
 
 function getRouteModelSlug(){
   const m = location.pathname.match(/^\/(?:talent|model)\/([^/]+)\/?$/i);
-  return m ? decodeURIComponent(m[1]) : null;
+  if(!m) return null;
+  // Canonical slugs are always lowercase (slugify() lowercases everything),
+  // so a shared/typed link with different capitalization — e.g. a messaging
+  // app auto-capitalizing the first letter — still resolves to the same
+  // profile instead of hitting "Talent Not Found". decodeURIComponent is
+  // guarded because a mangled %-sequence from a corrupted/shortened link
+  // would otherwise throw and abort routing entirely.
+  try { return decodeURIComponent(m[1]).toLowerCase(); }
+  catch(e){ return m[1].toLowerCase(); }
 }
 
 // Called from the "View Profile →" link — keeps normal middle-click/
@@ -2661,7 +2690,11 @@ function getRouteGalleryHome(){
 }
 function getRouteGalleryCatSlug(){
   const m = location.pathname.match(/^\/gallery\/([^/]+)\/?$/i);
-  return m ? decodeURIComponent(m[1]) : null;
+  if(!m) return null;
+  // Same case-insensitivity + guarded decode as getRouteModelSlug() — see
+  // its comment for why.
+  try { return decodeURIComponent(m[1]).toLowerCase(); }
+  catch(e){ return m[1].toLowerCase(); }
 }
 
 // slug === null/undefined navigates to the bare /gallery (all categories).
@@ -2759,16 +2792,32 @@ async function renderModelRoute(slug){
   document.body.classList.add('viewing-model');
   const md = models.find(m => getModelSlug(m) === slug);
   if(!md){
-    // models may not have finished loading yet on a hard refresh —
-    // render a soft "loading" state; init() re-calls this once loaded.
-    document.getElementById('model-page-inner').innerHTML = models.length
-      ? `<div class="mp-notfound"><h2>Talent Not Found</h2><p>We couldn't find a profile at this address.</p><button class="hero-cta" onclick="exitModelPage()" style="cursor:none;">← Back to Site</button></div>`
-      : `<div class="mp-notfound"><h2>Loading…</h2></div>`;
+    // models may not have finished loading yet on a hard refresh — render
+    // a soft "loading" state; init() re-calls this once loaded. But once
+    // a load has actually been attempted and models is still empty, this
+    // is either a genuinely missing profile OR the fetch itself failed
+    // (blocked network, Firebase outage) — show a retry instead of
+    // leaving a shared link stuck on "Loading…" forever.
+    let html;
+    if(!_modelsLoadAttempted){
+      html = `<div class="mp-notfound"><h2>Loading…</h2></div>`;
+    } else if(models.length){
+      html = `<div class="mp-notfound"><h2>Talent Not Found</h2><p>We couldn't find a profile at this address.</p><button class="hero-cta" onclick="exitModelPage()" style="cursor:none;">← Back to Site</button></div>`;
+    } else {
+      html = `<div class="mp-notfound"><h2>Couldn't Load This Page</h2><p>Check your connection and try again.</p><button class="hero-cta" onclick="retryModelRoute('${slug}')" style="cursor:none;">↻ Retry</button></div>`;
+    }
+    document.getElementById('model-page-inner').innerHTML = html;
     return;
   }
   currentModelObj = md;
   renderModelPage(md);
   await loadModelGalleryFromFirebase(md.id);
+}
+
+async function retryModelRoute(slug){
+  document.getElementById('model-page-inner').innerHTML = `<div class="mp-notfound"><h2>Loading…</h2></div>`;
+  await loadModelsFromFirebase();
+  renderModelRoute(slug);
 }
 
 function renderModelPage(md){
@@ -3663,6 +3712,7 @@ async function loadModelsFromFirebase(){
     }));
     renderModels();
   } catch(e){ console.warn('Could not load models:', e); }
+  finally { _modelsLoadAttempted = true; }
 }
 
 async function saveModelToFirebase(data){
@@ -4202,7 +4252,17 @@ async function init(){
   // This fires immediately on page load (restoring a previous session
   // from Firebase's own persisted auth token) and again on every
   // sign-in/sign-out, so all admin-gated UI stays in sync automatically.
-  _auth.onAuthStateChanged(user => {
+  //
+  // Guarded: if Firebase failed to initialize above, `_auth` is undefined
+  // and calling .onAuthStateChanged on it would throw here, uncaught —
+  // which would abort every await below (the actual photos/talents/
+  // creatives/bio loads), permanently stranding a shared /talent/<slug> or
+  // /gallery/<category> link on its "Loading…" placeholder with no error
+  // and no retry. A regular visitor is never an admin anyway, so treating
+  // a broken _auth as "not signed in" is a safe fallback, not a security
+  // gap — the real admin login still requires a working _auth to succeed.
+  try {
+    _auth.onAuthStateChanged(user => {
     isAdmin = !!user;
     document.body.classList.toggle('admin', isAdmin);
     if(user){
@@ -4218,7 +4278,16 @@ async function init(){
       _visitTrackedThisLoad = true;
       if(!isAdmin) trackVisit();
     }
-  });
+    });
+  } catch(e){
+    console.error('Firebase Auth unavailable — continuing as a signed-out visitor:', e);
+    isAdmin = false;
+    renderAll();
+    if(!_visitTrackedThisLoad){
+      _visitTrackedThisLoad = true;
+      trackVisit();
+    }
+  }
 
   await loadCustomServicesFromFirebase();
 
@@ -4328,7 +4397,14 @@ function syncMobAdminBtn(){
 
 /* ── COOKIE / PRIVACY NOTICE ── */
 (function(){
-  if(localStorage.getItem('cookieNoticeDismissed')) return;
+  // Guarded end-to-end: private-mode Safari and some in-app browsers
+  // (WhatsApp/Instagram/Messenger webviews, locked-down Android WebViews)
+  // can throw on any localStorage access rather than just returning null —
+  // this notice is cosmetic, so a storage failure should just skip it
+  // silently instead of throwing an uncaught error.
+  try {
+    if(localStorage.getItem('cookieNoticeDismissed')) return;
+  } catch(e){ return; }
   const bar=document.createElement('div');
   bar.id='cookie-notice';bar.setAttribute('role','region');bar.setAttribute('aria-label','Cookie notice');
   bar.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9997;background:rgba(8,8,8,.97);border-top:1px solid var(--border2);padding:16px 24px;display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:.78rem;color:var(--muted);';
@@ -4343,7 +4419,7 @@ function syncMobAdminBtn(){
   repositionBtt();
   window.addEventListener('resize', repositionBtt);
   document.getElementById('cookie-ok').addEventListener('click',()=>{
-    localStorage.setItem('cookieNoticeDismissed','1');
+    try { localStorage.setItem('cookieNoticeDismissed','1'); } catch(e){}
     bar.remove();
     window.removeEventListener('resize', repositionBtt);
     if(btt) btt.style.bottom = '24px';
